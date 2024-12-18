@@ -1,19 +1,4 @@
-import os, json
-from Song import Song, LikedSong
-from Spotify import getSortedSongHistory, getLikedSongs, getLostSongCandidateFile
+from Spotify import Spotify
 
 
-getLostSongCandidateFile()
-
-
-
-
-
-
-
-
-
-
-
-                
-            
+Spotify(r'Spotify_Data\Luna').saveLostSongCandidatesToFile()

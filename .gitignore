@@ -2,3 +2,6 @@ Spotify Data
 Spotify_Data
 venv
 __pycache__
+.vscode
+lost_song_candidates.txt
+out.txt

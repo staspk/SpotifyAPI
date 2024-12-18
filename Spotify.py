@@ -1,84 +1,122 @@
 import os, json
 from pathlib import Path
-from Song import Song, LikedSong
+from spotify_models import ISong, IStreamed, Song, LikedSong, Podcast
 
-def getSortedSongHistory(msCutoff = 0, returnDict = False):
-    dir = r'.\Spotify_Data\Spotify_Extended_Streaming_History'
-    jsons = [os.path.join(dir, file) for file in os.listdir(dir) if file.endswith('json') and 'Streaming_History_Audio' in file]
+class Spotify:
+    pathToStreamingHistory = ''
+    pathToLikedSongs = ''
 
-    songs = {}
+    songsStreamed:    dict[str, Song]    = {}
+    podcastsStreamed: dict[str, Podcast] = {}
 
-    for _json in jsons:
-        with open(_json, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-            for record in data:
-                song = Song(title=record['master_metadata_track_name'], artist=record['master_metadata_album_artist_name'], album=record['master_metadata_album_album_name'],
-                            amount_played=1, amount_listened=0, total_ms_played=record['ms_played'], ts=[ list(record['ts']) ])
-                
-                if record.get('reason_end') == 'trackdone':
-                    song.amount_listened = 1
+    songsLiked: dict[str, LikedSong] = {}
+    songDuplicatesFound: dict[str, int] = {}
 
-                songInDict = songs.pop(repr(song), None)
-                if songInDict is None:
-                    songs[repr(song)] = song
-                else:
-                    song.amount_played += songInDict.amount_played
-                    song.amount_listened += songInDict.amount_listened
-                    song.total_ms_played += songInDict.total_ms_played
-                    song.ts.extend(song.ts)
-                    songs[repr(song)] = song
+    def __init__(self, pathToSpotifyData):
+        dirList = os.listdir(pathToSpotifyData)
 
-                if song.total_ms_played <= msCutoff:
-                    songs.pop(repr(song))
-                    # print(f'Song Removed due to Cutoff: {repr(song)}')
-    
-    if returnDict is True:
-        return songs
+        jsonFileOnTopDirectory = False
+        for file in dirList:
+            if file.endswith('json'):
+                jsonFileOnTopDirectory = True
 
-    songList = list(songs.values())
-    songList.sort()
-
-    return songList
-
-def getLikedSongs():
-    jsonFile = r'.\Spotify_Data\Spotify_Account_Data\YourLibrary.json'
-
-    likedSongs = {}
-
-    with open(jsonFile, 'r', encoding='utf8') as file:
-        data = json.load(file)
-        for record in data['tracks']:
-            song = LikedSong(record['track'], record['artist'])
-
-            occurences = likedSongs.pop(repr(song), None)
-            if occurences is None:
-                likedSongs[repr(song)] = 1
-            else:
-                likedSongs[repr(song)] = (occurences + 1)
+            if jsonFileOnTopDirectory is False and file == 'Spotify_Extended_Streaming_History':
+                self.pathToStreamingHistory = os.path.join(pathToSpotifyData, 'Spotify_Extended_Streaming_History')                 
+            if jsonFileOnTopDirectory is False and file == 'Spotify Extended Streaming History':
+                self.pathToStreamingHistory = os.path.join(pathToSpotifyData, 'Spotify Extended Streaming History')
             
-    list = []
-    for likedSong in likedSongs.keys():
-        song = likedSong.split(':')
-        list.append(LikedSong(song[0], song[1]))
+            if jsonFileOnTopDirectory is False and file == 'Spotify_Account_Data':
+                self.pathToLikedSongs = os.path.join(pathToSpotifyData, file, 'YourLibrary.json')
+            if jsonFileOnTopDirectory is False and file == 'Spotify Account Data':
+                self.pathToLikedSongs = os.path.join(pathToSpotifyData, file, 'YourLibrary.json')
 
-    return list
+            if 'Streaming_History_Audio' in file:
+                jsonFileOnTopDirectory = True
+                self.pathToStreamingHistory = pathToSpotifyData
+            if file == 'YourLibrary.json':
+                jsonFileOnTopDirectory = True
+                self.pathToLikedSongs = os.path.join(pathToSpotifyData, 'YourLibrary.json')
 
-def saveSongListToFile(list, toFile=r'.\out.txt'):
-    with open(rf'{toFile}', 'w', encoding='utf-8') as file:
-        for song in list:
-            file.write(str(song))
-            file.write('\n\n')
+        if self.pathToStreamingHistory is not None:
+            self.parseStreamingHistory()
+        if self.pathToLikedSongs is not None:
+            self.parseLikedSongs()
 
-def getLostSongCandidateFile(msCutoff=500000, toFile=r'.\lost_song_candidates.txt'):
-    songHistory = getSortedSongHistory(msCutoff, returnDict=True)
-    likedSongs = getLikedSongs()
+    def parseStreamingHistory(self):
+        for fileName in os.listdir(self.pathToStreamingHistory):
+            if 'Streaming_History_Audio' in fileName:
+                with open(os.path.join(self.pathToStreamingHistory, fileName), 'r', encoding='utf-8') as file:
+                    data = json.load(file)
+                    for record in data:
+                        audio:IStreamed = None
+                        audio = IStreamed.createFromJsonRecord(record)
 
-    for likedSong in likedSongs:
-        song = songHistory.pop(repr(likedSong), None)
+                        targetDict = self.songsStreamed if type(audio) is Song else self.podcastsStreamed
 
-    candidateList = list(songHistory.values())
-    candidateList.sort()
+                        fromDict = targetDict.pop(repr(audio), None)
+                        audio.combine(fromDict)
+                        targetDict[repr(audio)] = audio
 
-    saveSongListToFile(candidateList, toFile)
+    def parseLikedSongs(self):
+        with open(self.pathToLikedSongs, 'r', encoding='utf8') as file:
+            data = json.load(file)
+            for record in data['tracks']:
+                song = LikedSong(record['track'], record['artist'], record['album'])
 
+                fromLiked = self.songsLiked.get(repr(song), None)
+                if fromLiked is None:
+                    self.songsLiked[repr(song)] = song
+                else:
+                    numOfDuplicates = self.songDuplicatesFound.pop(repr(song), 0)
+                    self.songDuplicatesFound[repr(song)] = (numOfDuplicates + 1)
+                    
+    def _getSortedList(self, dictInQuestion, secondsCutoff):
+        toReturnList = []
+        msCutoff = secondsCutoff * 1000
+
+        for song in dictInQuestion.values():
+            if song.total_ms_played > msCutoff:
+                toReturnList.append(song)
+
+        return toReturnList.sort()
+
+    def getSortedSongStreamingHistory(self, secondsCutoff = 600):
+        return self._getSortedList(self.songsStreamed, secondsCutoff)
+    
+    def getSortedPodcastStreamingHistory(self, secondsCutoff = 600):
+        return self._getSortedList(self.podcastsStreamed, secondsCutoff)
+    
+    def getLostSongCandidates(self, minsCutoff=10):
+        if len(self.songsStreamed) == 0:
+            raise AssertionError('Can only call Spotify.getLostSongCandidates() if Spotify has been fed the "Spotify Extended Streaming History" json data.')
+        
+        msCutoff = (minsCutoff * 60 * 1000)
+        songsStreamedCopy = {}
+
+        for song in self.songsStreamed.values():
+            if song.total_ms_played > msCutoff:
+                songsStreamedCopy[repr(song)] = song
+
+        if len(self.songsLiked) > 0:
+            for song in self.songsLiked.values():
+                songsStreamedCopy.pop(repr(song), None)
+
+        count = 0
+        for song in songsStreamedCopy.values():
+            count +=1
+
+        candidateList = list(songsStreamedCopy.values())
+        candidateList.sort()
+        return candidateList
+    
+    def saveLostSongCandidatesToFile(self, minsCutoff=10, toFile=r'.\lost_song_candidates.txt'):
+        candidates = self.getLostSongCandidates(minsCutoff)
+        Spotify.saveListToFile(candidates, toFile)
+        print(f'Lost Song Candidate file created at: {os.path.abspath(toFile)}')
+
+    def saveListToFile(theList, toFile=r'.\out.txt'):
+        with open(rf'{toFile}', 'w', encoding='utf-8') as file:
+            for item in theList:
+                file.write(str(item))
+                file.write('\n\n')
 
