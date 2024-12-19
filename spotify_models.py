@@ -34,14 +34,28 @@ class IStreamed:
             return Song(record)
         elif record['episode_name'] is not None:
             return Podcast(record)
-        raise AssertionError('Unreachable Code reached in IStreamed.createFromJsonRecord(cls, record:dict)')
+        else:
+            # print(f'Encountered a null-valued Record in Streaming_History_Audio: timestamp: {record['ts']}')
+            return None
 
     def combine(self, other):
-        if type(self) == type(other):
-            self.amount_played += other.amount_played
-            self.amount_listened += other.amount_listened
-            self.total_ms_played += other.total_ms_played
+        # print('IN COMBINE BEFORE: ')
+        # print(f'{self.amount_played}:{self.amount_listened}=={self.total_ms_played}==>{self.ts}')
+
+        # if isinstance(other, Song):
+        #     print(f'WHAT IS OTHER?: {type(other)}')
+
+        if isinstance(other, IStreamed):
+            # print('WE HAVE INDEED AND TRULY ENTERED isinstance(other, IStreamed)')
+            self.amount_played = (self.amount_played + other.amount_played)
+            self.amount_listened = (self.amount_listened + other.amount_listened)
+            self.total_ms_played += (self.total_ms_played + other.total_ms_played)
             self.ts.extend(other.ts)
+
+        # print('IN COMBINE AFTER: ')
+        # print(f'{self.amount_played}:{self.amount_listened}=={self.total_ms_played}==>{self.ts}')
+        # print()
+
         return self
     
     def __lt__(self, other):
@@ -91,7 +105,7 @@ class Podcast(IStreamed):
     def __init__(self, record):
         self.name = record['episode_name']
         self.show_name=record['episode_show_name']
-        IStreamed.__init__(self, amount_played=1, amount_listened=0, total_ms_played=record['ms_played'], ts=[list(record['ts'])] )
+        IStreamed.__init__(self, amount_played=1, amount_listened=0, total_ms_played=record['ms_played'], ts=[record['ts']] )
         if record.get('reason_end') == 'trackdone':
             self.amount_listened = 1
 

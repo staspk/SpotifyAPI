@@ -3,8 +3,8 @@ from pathlib import Path
 from spotify_models import ISong, IStreamed, Song, LikedSong, Podcast
 
 class Spotify:
-    pathToStreamingHistory = ''
-    pathToLikedSongs = ''
+    pathToStreamingHistory = None
+    pathToLikedSongs = None
 
     songsStreamed:    dict[str, Song]    = {}
     podcastsStreamed: dict[str, Podcast] = {}
@@ -43,19 +43,53 @@ class Spotify:
             self.parseLikedSongs()
 
     def parseStreamingHistory(self):
+
+        recordsIterated = 0
+        songCount = 0
+        podcastCount = 0
+
         for fileName in os.listdir(self.pathToStreamingHistory):
             if 'Streaming_History_Audio' in fileName:
                 with open(os.path.join(self.pathToStreamingHistory, fileName), 'r', encoding='utf-8') as file:
+                    print(f'Iterating through: {os.path.join(self.pathToStreamingHistory, fileName)}')
                     data = json.load(file)
                     for record in data:
+                        timesFuckedUp = 0
+                        
                         audio:IStreamed = None
                         audio = IStreamed.createFromJsonRecord(record)
 
-                        targetDict = self.songsStreamed if type(audio) is Song else self.podcastsStreamed
+                        if isinstance(audio, Song):
+                            # isong = ISong(audio)
+                            # print(audio.title)
+                            if 'Be Still' in audio.title:
+                                date = audio.ts[0].split('T')[0]
+                                time = audio.ts[0].split('T')[1]
+                                print(date)
+                                print(f'   {time}')
+                                print()
 
-                        fromDict = targetDict.pop(repr(audio), None)
-                        audio.combine(fromDict)
-                        targetDict[repr(audio)] = audio
+                            fromDict = self.songsStreamed.pop(repr(audio), None)
+                            if fromDict is not None:
+                                audio.combine(fromDict)
+                            self.songsStreamed[repr(audio)] = audio
+
+                            
+
+                        elif isinstance(audio, Podcast):
+                            fromDict = self.podcastsStreamed.pop(repr(audio), None)
+                            if fromDict is not None:
+                                audio = audio.combine(fromDict)
+                            self.podcastsStreamed[repr(audio)] = audio
+
+                        elif audio is None:
+                            timesFuckedUp += 1
+                            if timesFuckedUp > 2:
+                                raise RuntimeError('First Baloney')
+                        else:
+                            raise RuntimeError('Second Baloney')
+
+        print(f'We have iterated through: {recordsIterated}')
 
     def parseLikedSongs(self):
         with open(self.pathToLikedSongs, 'r', encoding='utf8') as file:
@@ -71,14 +105,23 @@ class Spotify:
                     self.songDuplicatesFound[repr(song)] = (numOfDuplicates + 1)
                     
     def _getSortedList(self, dictInQuestion, secondsCutoff):
+        print(f'In _getSortedList. len:self.songsStreamed: {len(self.songsStreamed)}')
+        print(f'In _getSortedList. len:self.songsLiked: {len(self.songsLiked)}')
+        print(f'In _getSortedList. len:self.podcastsStreamed: {len(self.podcastsStreamed)}')
+
+        # for podcast in self.podcastsStreamed:
+        #     print(str(podcast))
+
         toReturnList = []
-        msCutoff = secondsCutoff * 1000
+        msCutoff = (secondsCutoff * 1000)
 
         for song in dictInQuestion.values():
-            if song.total_ms_played > msCutoff:
+            if song.total_ms_played < msCutoff:
                 toReturnList.append(song)
 
-        return toReturnList.sort()
+        toReturnList.sort()
+        print(len(toReturnList))
+        return toReturnList
 
     def getSortedSongStreamingHistory(self, secondsCutoff = 600):
         return self._getSortedList(self.songsStreamed, secondsCutoff)
