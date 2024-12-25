@@ -49,7 +49,7 @@ class IStreamed:
             # print('WE HAVE INDEED AND TRULY ENTERED isinstance(other, IStreamed)')
             self.amount_played = (self.amount_played + other.amount_played)
             self.amount_listened = (self.amount_listened + other.amount_listened)
-            self.total_ms_played += (self.total_ms_played + other.total_ms_played)
+            self.total_ms_played = (self.total_ms_played + other.total_ms_played)
             self.ts.extend(other.ts)
 
         # print('IN COMBINE AFTER: ')
@@ -78,6 +78,14 @@ class IStreamed:
             translatedTimeString += f' => {hrs:.2f}hrs'
 
         return string + translatedTimeString
+    
+    def __repr__(self):
+        if isinstance(self, Song):
+            return Song.__repr__(self)
+        elif isinstance(self, Podcast):
+            return Podcast.__repr__(self)
+        else:
+            return "None:None:None"
 
 @dataclass()
 class Song(ISong, IStreamed):
@@ -91,6 +99,9 @@ class Song(ISong, IStreamed):
         string = f'{ISong.__str__(self)}\n'
         string += f'{IStreamed.__str__(self)}'
         return string
+    
+    def __repr__(self):
+        return ISong.__repr__(self)
 
 @dataclass()
 class LikedSong(ISong):

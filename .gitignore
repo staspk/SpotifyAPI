@@ -4,4 +4,5 @@ venv
 __pycache__
 .vscode
 lost_song_candidates.txt
-out.txt
+Luna_Top_Streamed.txt
+Stan_Top_Streamed.txt

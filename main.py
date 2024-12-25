@@ -1,10 +1,15 @@
 from Spotify import Spotify
 
+Stan = Spotify(r'Spotify_Data\Stan').getSortedSongStreamingHistory(1800)
+Luna = Spotify(r'Spotify_Data\Luna').getSortedSongStreamingHistory(1800)
 
-songs = Spotify(r'Spotify_Data\Stan').getSortedSongStreamingHistory()
+# sharedSongs = Stan.compareSongsStreamed(Luna)
+# Spotify.saveListToFile
 
-# for song in songs:
-#     print(song)
-#     print()
+Spotify.saveListToFile(Stan, toFile=r'.\Stan_Top_Streamed.txt')
+# Spotify.saveListToFile(Luna, toFile=r'.\Luna_Top_Streamed.txt')
 
-Spotify.saveListToFile(songs, toFile=r'.\Stan_top_streamed.txt')
+
+print(f'Stan Streamed: {len(Stan)}')
+# print(f'Luna Streamed: {len(Luna)}')
+

@@ -1,6 +1,7 @@
 import os, json
 from pathlib import Path
 from spotify_models import ISong, IStreamed, Song, LikedSong, Podcast
+import time
 
 class Spotify:
     pathToStreamingHistory = None
@@ -48,33 +49,37 @@ class Spotify:
         songCount = 0
         podcastCount = 0
 
+        lastTitle = ""
+
         for fileName in os.listdir(self.pathToStreamingHistory):
             if 'Streaming_History_Audio' in fileName:
                 with open(os.path.join(self.pathToStreamingHistory, fileName), 'r', encoding='utf-8') as file:
-                    print(f'Iterating through: {os.path.join(self.pathToStreamingHistory, fileName)}')
+                    # print(f'Iterating through: {os.path.join(self.pathToStreamingHistory, fileName)}')
                     data = json.load(file)
-                    for record in data:
-                        timesFuckedUp = 0
-                        
+                    for record in data:                        
                         audio:IStreamed = None
                         audio = IStreamed.createFromJsonRecord(record)
+
+                        # currentTitle = getattr(audio, "title", None)
+
+                        # if currentTitle == lastTitle:
+                        #     print(recordsIterated)
+                        #     time.sleep(10)
+
+                        # lastTitle = getattr(audio, "title", None)
+                        # print(lastTitle)
 
                         if isinstance(audio, Song):
                             # isong = ISong(audio)
                             # print(audio.title)
-                            if 'Be Still' in audio.title:
-                                date = audio.ts[0].split('T')[0]
-                                time = audio.ts[0].split('T')[1]
-                                print(date)
-                                print(f'   {time}')
-                                print()
 
-                            fromDict = self.songsStreamed.pop(repr(audio), None)
+                            # repr = ISong.__repr__(audio)
+                            representation = repr(audio)
+
+                            fromDict = self.songsStreamed.pop(representation, None)
                             if fromDict is not None:
                                 audio.combine(fromDict)
-                            self.songsStreamed[repr(audio)] = audio
-
-                            
+                            self.songsStreamed[representation] = audio
 
                         elif isinstance(audio, Podcast):
                             fromDict = self.podcastsStreamed.pop(repr(audio), None)
@@ -83,11 +88,12 @@ class Spotify:
                             self.podcastsStreamed[repr(audio)] = audio
 
                         elif audio is None:
-                            timesFuckedUp += 1
-                            if timesFuckedUp > 2:
-                                raise RuntimeError('First Baloney')
+                            print(f"Garbage Data at Record Read Cycle: {recordsIterated}")
                         else:
-                            raise RuntimeError('Second Baloney')
+                            print(f"RuntimeError Reached on Cycle: {recordsIterated}")
+                            raise RuntimeError('Neither Song nor Podcast')
+                        
+                        recordsIterated += 1
 
         print(f'We have iterated through: {recordsIterated}')
 
@@ -104,30 +110,37 @@ class Spotify:
                     numOfDuplicates = self.songDuplicatesFound.pop(repr(song), 0)
                     self.songDuplicatesFound[repr(song)] = (numOfDuplicates + 1)
                     
-    def _getSortedList(self, dictInQuestion, secondsCutoff):
-        print(f'In _getSortedList. len:self.songsStreamed: {len(self.songsStreamed)}')
-        print(f'In _getSortedList. len:self.songsLiked: {len(self.songsLiked)}')
-        print(f'In _getSortedList. len:self.podcastsStreamed: {len(self.podcastsStreamed)}')
-
-        # for podcast in self.podcastsStreamed:
-        #     print(str(podcast))
-
+    def _getSortedList(dictInQuestion, secondsCutoff):
         toReturnList = []
         msCutoff = (secondsCutoff * 1000)
 
         for song in dictInQuestion.values():
-            if song.total_ms_played < msCutoff:
+            if song.total_ms_played > msCutoff:
                 toReturnList.append(song)
 
         toReturnList.sort()
         print(len(toReturnList))
         return toReturnList
 
+    def compareSongsStreamed(self, other):
+        if not isinstance(other, Spotify):
+            return AssertionError('other must be an instance of Spotify')
+        
+        keys1 = self.songsStreamed.keys()
+        keys2 = other.songsStreamed.keys()
+        sharedKeys: list[Song, Song] = []
+        
+        for key in keys1:
+            if keys2.__contains__(key):
+                sharedKeys.append(self.songsStreamed[key], other.songsStreamed[key])
+
+        return sharedKeys
+
     def getSortedSongStreamingHistory(self, secondsCutoff = 600):
-        return self._getSortedList(self.songsStreamed, secondsCutoff)
+        return Spotify._getSortedList(self.songsStreamed, secondsCutoff)
     
     def getSortedPodcastStreamingHistory(self, secondsCutoff = 600):
-        return self._getSortedList(self.podcastsStreamed, secondsCutoff)
+        return Spotify._getSortedList(self.podcastsStreamed, secondsCutoff)
     
     def getLostSongCandidates(self, minsCutoff=10):
         if len(self.songsStreamed) == 0:
