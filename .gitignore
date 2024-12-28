@@ -1,5 +1,7 @@
+.venv
+.env
+auth
 Spotify Data
 Spotify_Data
-venv
 __pycache__
 generated_data
