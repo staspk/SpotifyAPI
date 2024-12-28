@@ -109,7 +109,8 @@ class Spotify:
                 else:
                     numOfDuplicates = self.songDuplicatesFound.pop(repr(song), 0)
                     self.songDuplicatesFound[repr(song)] = (numOfDuplicates + 1)
-                    
+
+    @staticmethod 
     def _getSortedList(dictInQuestion, secondsCutoff):
         toReturnList = []
         msCutoff = (secondsCutoff * 1000)
