@@ -50,16 +50,20 @@ def callback():
     }
 
     response = requests.post(token_url, headers=headers, data=data, json=True)
+    timestamp = response.headers['date']
 
     if response.status_code == 200:
         token_info = response.json()
 
-        Path("./auth").mkdir(parents=True, exist_ok=True)
+        # token_info
 
-        with open('./auth/spotify_token.json', 'w') as json_file:
+        env_dir = r'.\.env'
+        Path(env_dir).mkdir(parents=True, exist_ok=True)
+
+        with open(fr'{env_dir}\spotify_auth_token.json', 'w') as json_file:
             json.dump(token_info, json_file)
         
-        with open('./auth/spotify_token_readable.json', 'w') as json_file:
+        with open(fr'{env_dir}\spotify_auth_token_readable.json', 'w') as json_file:
             json.dump(token_info, json_file, indent=4)
 
         return jsonify(token_info)
