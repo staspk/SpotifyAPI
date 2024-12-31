@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 @dataclass()
-class ISong:
+class ISong():
     title: str
     artist: str
     album: str
@@ -10,13 +10,7 @@ class ISong:
     def __eq__(self, other):
         if not isinstance(other, ISong):
             return False
-        return self.title == other.title and self.artist == other.artist and self.album == other.album
-    
-    def __hash__(self):
-        return hash(self.title, self.artist, self.album)
-    
-    def __repr__(self):
-        return f'Song:{self.title}:{self.artist}'
+        return (self.title == other.title and self.artist == other.artist and self.album == other.album)
     
     def __str__(self):
         return f'{self.title} - {self.artist}'
@@ -27,6 +21,7 @@ class IStreamed:
     amount_listened: int
     total_ms_played: int
     ts: List[str]
+    uri: str
 
     @classmethod
     def createFromJsonRecord(cls, record:dict):
@@ -62,7 +57,7 @@ class IStreamed:
         if not isinstance(other, IStreamed):
             raise TypeError('__lt__ only possible between classes that implement IStreamed')
         return self.total_ms_played < other.total_ms_played
-    
+        
     def __str__(self):
         string = f'{self.amount_listened}:{self.amount_played};  '
 
@@ -79,29 +74,22 @@ class IStreamed:
 
         return string + translatedTimeString
     
-    def __repr__(self):
-        if isinstance(self, Song):
-            return Song.__repr__(self)
-        elif isinstance(self, Podcast):
-            return Podcast.__repr__(self)
-        else:
-            return "None:None:None"
 
 @dataclass()
 class Song(ISong, IStreamed):
     def __init__(self, record):
         ISong.__init__(self, title=record['master_metadata_track_name'], artist=record['master_metadata_album_artist_name'], album=record['master_metadata_album_album_name'])
-        IStreamed.__init__(self, amount_played=1, amount_listened=0, total_ms_played=record['ms_played'], ts=[record['ts']] )
+        IStreamed.__init__(self, amount_played=1, amount_listened=0, total_ms_played=record['ms_played'], ts=[record['ts']], uri=record['spotify_track_uri'] )
         if record.get('reason_end') == 'trackdone':
             self.amount_listened = 1
 
+    def __repr__(self):
+        return f'Song:{self.title}:{self.artist}'
+       
     def __str__(self):
         string = f'{ISong.__str__(self)}\n'
         string += f'{IStreamed.__str__(self)}'
         return string
-    
-    def __repr__(self):
-        return ISong.__repr__(self)
 
 @dataclass()
 class LikedSong(ISong):
@@ -116,17 +104,14 @@ class Podcast(IStreamed):
     def __init__(self, record):
         self.name = record['episode_name']
         self.show_name=record['episode_show_name']
-        IStreamed.__init__(self, amount_played=1, amount_listened=0, total_ms_played=record['ms_played'], ts=[record['ts']] )
+        IStreamed.__init__(self, amount_played=1, amount_listened=0, total_ms_played=record['ms_played'], ts=[record['ts']], uri=record['spotify_episode_uri'] )
         if record.get('reason_end') == 'trackdone':
             self.amount_listened = 1
 
     def __eq__(self, other):
         if not isinstance(other, Podcast):
             return False
-        return self.name == other.name and self.show_name == other.show_name
-    
-    def __hash__(self):
-        return hash(self.name, self.show_name)
+        return (self.name == other.name and self.show_name == other.show_name)
     
     def __repr__(self):
         return f'Podcast:{self.name}:{self.show_name}'
