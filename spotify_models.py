@@ -59,6 +59,7 @@ class IStreamed:
         return self.total_ms_played < other.total_ms_played
         
     def __str__(self):
+        # string = f'{self.uri}\n'
         string = f'{self.amount_listened}:{self.amount_played};  '
 
         if self.total_ms_played < 1000:
@@ -87,8 +88,10 @@ class Song(ISong, IStreamed):
         return f'Song:{self.title}:{self.artist}'
        
     def __str__(self):
+        # string = f'{self.uri}'
         string = f'{ISong.__str__(self)}\n'
-        string += f'{IStreamed.__str__(self)}'
+        string += f'{IStreamed.__str__(self)}\n'
+        string += f'{self.uri}'
         return string
 
 @dataclass()

@@ -1,7 +1,6 @@
 import os, json
 from pathlib import Path
 from spotify_models import ISong, IStreamed, Song, LikedSong, Podcast
-import time
 
 class Spotify:
     pathToStreamingHistory = None
@@ -11,7 +10,7 @@ class Spotify:
     podcastsStreamed: dict[str, Podcast] = {}
 
     songsLiked: dict[str, LikedSong] = {}
-    songDuplicatesFound: dict[str, int] = {}
+    songDuplicates: dict[str, int] = {}
 
     def __init__(self, pathToSpotifyData):
         dirList = os.listdir(pathToSpotifyData)
@@ -107,11 +106,11 @@ class Spotify:
                 if fromLiked is None:
                     self.songsLiked[repr(song)] = song
                 else:
-                    numOfDuplicates = self.songDuplicatesFound.pop(repr(song), 0)
-                    self.songDuplicatesFound[repr(song)] = (numOfDuplicates + 1)
+                    numOfDuplicates = self.songDuplicates.pop(repr(song), 0)
+                    self.songDuplicates[repr(song)] = (numOfDuplicates + 1)
 
     @staticmethod 
-    def _getSortedList(dictInQuestion, secondsCutoff):
+    def _getSortedList(dictInQuestion, secondsCutoff) -> list:
         toReturnList = []
         msCutoff = (secondsCutoff * 1000)
 
@@ -120,7 +119,7 @@ class Spotify:
                 toReturnList.append(song)
 
         toReturnList.sort()
-        print(len(toReturnList))
+        print(f'Sorting done in _getSortedList(). toReturnList Count: {len(toReturnList)}')
         return toReturnList
 
     def compareSongsStreamed(self, other):
@@ -137,10 +136,10 @@ class Spotify:
 
         return sharedKeys
 
-    def getSortedSongStreamingHistory(self, secondsCutoff = 600):
+    def getSortedSongStreamingHistory(self, secondsCutoff = 600) -> list:
         return Spotify._getSortedList(self.songsStreamed, secondsCutoff)
     
-    def getSortedPodcastStreamingHistory(self, secondsCutoff = 600):
+    def getSortedPodcastStreamingHistory(self, secondsCutoff = 600) -> list:
         return Spotify._getSortedList(self.podcastsStreamed, secondsCutoff)
     
     def getLostSongCandidates(self, minsCutoff=10):
