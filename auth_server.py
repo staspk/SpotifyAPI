@@ -55,8 +55,6 @@ def callback():
     if response.status_code == 200:
         token_info = response.json()
 
-        # token_info
-
         env_dir = r'.\.env'
         Path(env_dir).mkdir(parents=True, exist_ok=True)
 
@@ -65,6 +63,8 @@ def callback():
         
         with open(fr'{env_dir}\spotify_auth_token_readable.json', 'w') as json_file:
             json.dump(token_info, json_file, indent=4)
+
+        Env.save('access_token', token_info['access_token'])
 
         return jsonify(token_info)
     else:

@@ -10,3 +10,15 @@
 
 # print(f'Stan Streamed: {len(Stan)}')
 # print(f'Luna Streamed: {len(Luna)}')
+
+import time
+from datetime import datetime
+
+time = time.strptime("2015-07-23", "%Y-%m-%d")
+print(time)
+
+print()
+print()
+
+datetime = datetime.strptime("2015-07-23", "%Y-%m-%d")
+print(datetime)

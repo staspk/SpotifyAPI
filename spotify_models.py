@@ -123,5 +123,3 @@ class Podcast(IStreamed):
         string = f'{self.name} - {self.show_name}\n'
         string += IStreamed.__str__(self)
         return string
-    
-    

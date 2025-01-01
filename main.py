@@ -1,13 +1,16 @@
+from sys import getsizeof
 from requests import request
-from spotify import Spotify
+import requests
+from spotify_stats import SpotifyUser
 from kozubenko.env import Env
 
-# Luna = Spotify(r'Spotify_Data\Luna').getSortedSongStreamingHistory(1800)
-# print(f'THE LENGTH: {len(Luna)}')
+SpotifyUser(r'Spotify_Data\Luna')
+# print(f'Final Song Count: {len(Luna)}')
+    
 
 # print()
 
-Stan = Spotify(r'Spotify_Data\Stan').getSortedSongStreamingHistory(1800)
+# Stan = Spotify(r'Spotify_Data\Stan').getSortedSongStreamingHistory(30)
 # print(f'THE LENGTH: {len(Stan)}')
 
 
@@ -22,5 +25,4 @@ Stan = Spotify(r'Spotify_Data\Stan').getSortedSongStreamingHistory(1800)
 #     print(key)
 #     print(value)
 #     print()
-
 
