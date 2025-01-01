@@ -16,14 +16,12 @@ def home():
 
 @app.route('/login')
 def login():
-    Env.add('state', Utils.get_randomized_string(16))
-
     params= {
         'response_type': 'code',
         'client_id': Env.vars['client_id'],
         'scope': Env.vars['scope'],
         'redirect_uri': Env.vars['redirect_uri'],
-        'state': Env.vars['state']
+        'state': Utils.get_randomized_string(16)
     }
     
     return redirect('https://accounts.spotify.com/authorize?' + urllib.parse.urlencode(params))
@@ -65,6 +63,7 @@ def callback():
             json.dump(token_info, json_file, indent=4)
 
         Env.save('access_token', token_info['access_token'])
+        Env.save('refresh_token', token_info['refresh_token'])
 
         return jsonify(token_info)
     else:

@@ -2,23 +2,31 @@ import os
 from definitions import ENV_PATH
 
 class Env:
+    loaded = False
     vars = {}
 
-    def load(path_to_env_file = ENV_PATH, hard_reset=False):
-        if len(Env.vars) == 0:
+    def _overwrite_dict_to_file(path_to_env_file = ENV_PATH):
+        with open(path_to_env_file, 'w') as file:
+            for key, value in Env.vars.items():
+                file.write(f'{key}={value}\n')
+
+    def load(path_to_env_file = ENV_PATH, key_to_delete:str = None):
+        if Env.loaded == False:
             with open(path_to_env_file, 'r') as file:
                 for line in file:
-                    line = line.strip()
-                    key, value = line.split('=', 1)
-                    Env.vars[key] = value
+                    key, value = (line.strip()).split('=', 1)       # These 2 lines, do most of the cleanup
+                    if (key and value) and key != key_to_delete:    #  as we read from file
+                        Env.vars[key] = value
+            Env._overwrite_dict_to_file(path_to_env_file)
+        Env.loaded = True
 
-    def add(key, value):
-        Env.vars[key] = value
-    
-    def get(key):
-        return Env.vars.get(key, None)
-    
-    def save(key, value, path_to_env_file = ENV_PATH):
-        with open(path_to_env_file, 'a') as file:
-            file.write(f'\n{key}={value}')
-        Env.vars[key] = value
+    def save(key:str, value:str, path_to_env_file = ENV_PATH):
+        if Env.loaded == False:
+            Env.load(path_to_env_file)
+
+        if key and value:
+            Env.vars[key] = value
+            Env._overwrite_dict_to_file(path_to_env_file)
+        
+    def delete(key:str):
+        Env.load(ENV_PATH, key_to_delete=key)
