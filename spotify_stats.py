@@ -1,4 +1,3 @@
-import locale
 import os, json
 from pathlib import Path
 from datetime import datetime
@@ -12,7 +11,7 @@ class SpotifyUser:
     songs_streamed:    dict[str, Song]    = {}
     podcasts_streamed: dict[str, Podcast] = {}
 
-    songsLiked: dict[str, LikedSong] = {}
+    songsLiked:     dict[str, LikedSong] = {}
     songDuplicates: dict[str, int] = {}
 
     def __init__(self, spotify_data_dir):

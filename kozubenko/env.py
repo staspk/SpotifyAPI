@@ -1,11 +1,11 @@
 import os
-from definitions import ENV_PATH
+from definitions import ENV
 
 class Env:
     loaded = False
     vars = {}
 
-    def load(path_to_env_file = ENV_PATH, key_to_delete:str = None):
+    def load(path_to_env_file = ENV, key_to_delete:str = None):
         if Env.loaded == False:
             with open(path_to_env_file, 'r') as file:
                 for line in file:
@@ -16,7 +16,7 @@ class Env:
             Env._overwrite_dict_to_file(path_to_env_file)
         Env.loaded = True
 
-    def save(key:str, value:str, path_to_env_file = ENV_PATH):
+    def save(key:str, value:str, path_to_env_file = ENV):
         if Env.loaded == False:
             Env.load(path_to_env_file)
 
@@ -25,9 +25,9 @@ class Env:
             Env._overwrite_dict_to_file(path_to_env_file)
         
     def delete(key:str):
-        Env.load(ENV_PATH, key_to_delete=key)
+        Env.load(ENV, key_to_delete=key)
 
-    def _overwrite_dict_to_file(path_to_env_file = ENV_PATH):
+    def _overwrite_dict_to_file(path_to_env_file = ENV):
         with open(path_to_env_file, 'w') as file:
             for key, value in Env.vars.items():
                 file.write(f'{key}={value}\n')
