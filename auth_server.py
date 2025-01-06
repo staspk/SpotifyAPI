@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import multiprocessing
 import os
 from pathlib import Path
 import signal
@@ -23,29 +24,29 @@ class LocalServerThread(threading.Thread):
         self.server = server
         self.host = host
         self.port = port
-        LocalServerThread.PID = os.getpid()
 
     def run(self):
-        print()
         self.server.run(host=self.host, port=self.port)
         
+    def stop(self):
+        raise Exception('Server shutting down...')
 
-def hasAuthTokenExpired(bool = False) -> bool:
-    if bool is True:
-        return True
+def validate_token(reject = True) -> bool:
+    if reject is True:
+        return False
     Env.load()
     token_expiration_str = Env.vars.get('token_expiration', None)
     
     if not token_expiration_str:
-        return True
+        return False
 
     expiresOn = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
     now = datetime.now()
     
     if now >= expiresOn:
-        return True
-    else:
         return False
+    else:
+        return True
 
 def start_local_http_server():
     server = Flask(__name__)
@@ -110,9 +111,20 @@ def start_local_http_server():
             return jsonify(token_info)
         else:
             return jsonify({'error': 'Failed to get token'}), response.status_code
+    
+    @server.get('/shutdown')
+    def shutdown():
+        func = request.environ.get('werkzeug.server.shutdown')
+        if func is None:
+            raise RuntimeError('Not running with the Werkzeug Server')
+        func()
+        return 'Server shutting down...'
 
+    # global process
     thread = LocalServerThread(server)
     thread.start()
+    # process = multiprocessing.Process(target=server.run('127.0.0.1', 8080), name=LocalServerThread.THREAD_NAME)
+    # process.start()
     
     time.sleep(.1)
 
@@ -120,9 +132,8 @@ def request_token():
     return False
 
 def stop_local_http_server():
-    for thread in threading.enumerate():
-        if thread.name == LocalServerThread.THREAD_NAME:
-            thread._stop()
+    requests.get('http://127.0.0.1:8080/shutdown')
+        
 
 
 

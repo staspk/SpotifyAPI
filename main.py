@@ -1,4 +1,5 @@
 import os
+import subprocess
 import time
 import auth_server
 from spotify_requests import SpotifyRequests
@@ -6,32 +7,29 @@ from spotify_stats import SpotifyUser
 from kozubenko.env import Env
 from kozubenko.timer import Timer
 
-from definitions import PROJECT_ROOT_DIRECTORY
-
-for dirpath, dirnames, filenames in os.walk(PROJECT_ROOT_DIRECTORY):
-    print(f"dirpath: {dirpath}")
-    print(f"dirnames: {dirnames}")
-    print(f"filenames: {filenames}")
-    print('\n')
+from definitions import SPOTIFY_USER_DATA_DIR
 
 
 
-# song_list = SpotifyUser(r'Spotify_Data\Stan.zip').getSortedSongStreamingHistory(30)
+
+song_list = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Stan').getSortedSongStreamingHistory(30)
 
 
-# for song in song_list:
-#     print(str(song))
+for song in song_list:
+    print(str(song))
+    print()
 
 
-# if auth_server.hasAuthTokenExpired(True):
+# if not auth_server.validate_token(True):
 #     auth_server.start_local_http_server()
 
-    
+#     time.sleep(3)
 
+#     print('ive woken up')
 
 #     auth_server.stop_local_http_server()
 
-#     print('reached')
+#     print('ive reached the end')
     
 
     # time.sleep(120)

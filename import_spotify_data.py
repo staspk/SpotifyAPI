@@ -9,7 +9,7 @@ from definitions import SPOTIFY_ACCOUNT_DATA, SPOTIFY_EXTENDED_STREAMING_HISTORY
 
 from zipfile import ZipFile, ZIP_DEFLATED
 
-# dir_to_archive => full path of directory to archive; DATA_CATEGORY => See 'my_spotify_data*.zip' Folder Names in definitions.py
+# dir_to_archive => full path of directory to archive; DATA_CATEGORY => See 'my_spotify_data.zip' Folder Names in definitions.py
 def archive(dir_to_archive:str, DATA_CATEGORY):
     created_at = datetime.fromtimestamp(os.path.getctime(dir_to_archive)).strftime('%Y-%m-%d')
     name = dir_to_archive.split('\\')[-2]
@@ -17,7 +17,7 @@ def archive(dir_to_archive:str, DATA_CATEGORY):
     Path(output_target_dir).mkdir(parents=True, exist_ok=True)
 
     data_category = dir_to_archive.split('\\')[-1]
-    print(f'data_category:{data_category}')
+    print(f'Data Category: {data_category}')
     output_folder_name = f'{data_category} - {created_at}.zip'                  # example: 'Spotify Extended Streaming History - 2025-01-01'
     output_target_dir = os.path.join(output_target_dir, output_folder_name)
     
