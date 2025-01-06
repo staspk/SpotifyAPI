@@ -1,11 +1,6 @@
-.venv
 .env
+.venv
 auth
-Spotify Data
-Spotify_Data
 Spotify User Data
-__pycache__
 generated_data
-Spotify Account Data
-Spotify Extended Streaming History
-Spotify Technical Log Information
+__pycache__
