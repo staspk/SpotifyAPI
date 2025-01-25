@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-import multiprocessing
+import multiprocessing, subprocess
 import os
 from pathlib import Path
 import signal
@@ -8,6 +8,7 @@ import time
 
 import requests, urllib, base64, json
 from flask import Flask, redirect, request, jsonify
+from werkzeug.serving import make_server
 
 from kozubenko.env import Env
 from kozubenko.timer import Timer
@@ -15,29 +16,33 @@ from kozubenko.utils import Utils
 
 
 class LocalServerThread(threading.Thread):
-    THREAD_NAME = 'LocalServerThread'
-    PID = None
+    THREAD_NAME = 'LocalServerThread'        
 
-    def __init__(self, server, host = '127.0.0.1', port=8080):
-        threading.Thread.__init__(self, name=LocalServerThread.THREAD_NAME)
+    def __init__(self, app: Flask):     
+        threading.Thread.__init__(self, name=LocalServerThread.THREAD_NAME, daemon=True)
 
-        self.server = server
-        self.host = host
-        self.port = port
+        self.server = make_server('127.0.0.1', '8080', app=app)
+        self.ctx = app.app_context()
+        self.ctx.push()
 
     def run(self):
-        self.server.run(host=self.host, port=self.port)
+        self.server.serve_forever()
+    
+    # Currently only works if the server has handled zero requests. Otherwise hangs 90-300 seconds before relinquishing control back to the Main Thread.
+    # After being stuck for a week, setting daemon=True and just letting the server run indefinitely on the separate thread.
+    def shutdown(self):
+        print(f'In LocalServerThread.shutdown(). Current Thread: {threading.current_thread().name}')
+        self.server.shutdown()
         
-    def stop(self):
-        raise Exception('Server shutting down...')
 
 def validate_token(reject = True) -> bool:
     if reject is True:
         return False
+    
     Env.load()
     token_expiration_str = Env.vars.get('token_expiration', None)
     
-    if not token_expiration_str:
+    if token_expiration_str is None:
         return False
 
     expiresOn = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
@@ -45,17 +50,17 @@ def validate_token(reject = True) -> bool:
     
     if now >= expiresOn:
         return False
-    else:
-        return True
+    
+    return True
 
 def start_local_http_server():
-    server = Flask(__name__)
+    app = Flask(__name__)
 
-    @server.route('/')
+    @app.route('/')
     def home():
         return '<div><a href="http://127.0.0.1:8080/login">LOGIN</a></div>'
 
-    @server.route('/login')
+    @app.route('/login')
     def login():
         params = {
             'response_type': 'code',
@@ -67,7 +72,7 @@ def start_local_http_server():
         
         return redirect('https://accounts.spotify.com/authorize?' + urllib.parse.urlencode(params))
 
-    @server.route('/callback')
+    @app.route('/callback')
     def callback():
         code = request.args.get('code', None)
         state = request.args.get('state', None)
@@ -111,30 +116,18 @@ def start_local_http_server():
             return jsonify(token_info)
         else:
             return jsonify({'error': 'Failed to get token'}), response.status_code
-    
-    @server.get('/shutdown')
-    def shutdown():
-        func = request.environ.get('werkzeug.server.shutdown')
-        if func is None:
-            raise RuntimeError('Not running with the Werkzeug Server')
-        func()
-        return 'Server shutting down...'
 
-    # global process
-    thread = LocalServerThread(server)
-    thread.start()
-    # process = multiprocessing.Process(target=server.run('127.0.0.1', 8080), name=LocalServerThread.THREAD_NAME)
-    # process.start()
+    global server
+    server = LocalServerThread(app)
+    server.start()
+    print(fr'Started {LocalServerThread.THREAD_NAME}, serving: http://127.0.0.1:8080')
     
     time.sleep(.1)
 
 def request_token():
     return False
 
+# Currently only works if the server has handled zero requests. Otherwise hangs 90-300 seconds before relinquishing control back to the Main Thread.
+# After being stuck for a week, setting daemon=True and just letting the server run indefinitely on the separate thread.
 def stop_local_http_server():
-    requests.get('http://127.0.0.1:8080/shutdown')
-        
-
-
-
-    
+    server.shutdown()

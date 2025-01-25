@@ -6,6 +6,7 @@
             "python": "C:/Users/stasp/Desktop/Spotify-History/.venv/Scripts/python.exe",
             "request": "launch",
             "program": "${workspaceFolder}\\main.py",
+            "justMyCode": false
         }
     ]
 }
