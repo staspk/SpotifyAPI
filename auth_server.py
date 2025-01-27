@@ -5,6 +5,7 @@ from pathlib import Path
 import signal
 import threading
 import time
+import webbrowser
 
 import requests, urllib, base64, json
 from flask import Flask, redirect, request, jsonify
@@ -29,31 +30,74 @@ class LocalServerThread(threading.Thread):
         self.server.serve_forever()
     
     # Currently only works if the server has handled zero requests. Otherwise hangs 90-300 seconds before relinquishing control back to the Main Thread.
-    # After being stuck for a week, setting daemon=True and just letting the server run indefinitely on the separate thread.
+    # After being stuck for a week, setting daemon=True and just letting the server run indefinitely until program exit.
     def shutdown(self):
         print(f'In LocalServerThread.shutdown(). Current Thread: {threading.current_thread().name}')
         self.server.shutdown()
         
 
-def validate_token(reject = True) -> bool:
-    if reject is True:
-        return False
-    
+def validate_token():
     Env.load()
     token_expiration_str = Env.vars.get('token_expiration', None)
     
     if token_expiration_str is None:
-        return False
+        request_token()
+        return
 
-    expiresOn = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
+    expiration = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
     now = datetime.now()
     
-    if now >= expiresOn:
-        return False
-    
-    return True
+    if now > expiration - timedelta(minutes=3):
+        refresh_token()
+
+def request_token():
+    raise RuntimeError('request_token() currently not implemented')
+    start_local_http_server()
+
+    params = {
+        'response_type': 'code',
+        'client_id': Env.vars['client_id'],
+        'scope': Env.vars['scope'],
+        'redirect_uri': Env.vars['redirect_uri'],
+        'state': Utils.get_randomized_string(16)
+    }
+
+    requests.post('http://127.0.0.1:8080/login', params=params)
+
+    return False
+
+def refresh_token():
+    Env.load()
+    refresh_token = Env.vars.get('refresh_token', None)
+    url = 'https://accounts.spotify.com/api/token'
+
+    headers = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + base64.b64encode(f'{Env.vars['client_id']}:{Env.vars['client_secret']}'.encode()).decode('utf-8')
+    }
+
+    body = {
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token
+    }
+
+    response = requests.post(url, headers=headers, data=body)
+
+    if response.status_code == 200:
+        response_data = response.json()
+        Env.save('access_token', response_data['access_token'])
+        token_expiration = datetime.now() + timedelta(seconds=int(response_data['expires_in']))
+        Env.save('token_expiration', token_expiration.strftime('%Y-%m-%d %H:%M'))
+        if 'refresh_token' in response_data:
+            Env.save('refresh_token', response_data['refresh_token'])
+    else:
+        RuntimeError(f'refresh_token() not implemented for response.status_code == {response.status_code}.')
 
 def start_local_http_server():
+    for thread in threading.enumerate():
+        if thread.name == LocalServerThread.THREAD_NAME:
+            return
+    
     app = Flask(__name__)
 
     @app.route('/')
@@ -115,19 +159,17 @@ def start_local_http_server():
 
             return jsonify(token_info)
         else:
+            print(f'/CallBack endpoint hit. response.status_code == {response.status_code}')
             return jsonify({'error': 'Failed to get token'}), response.status_code
 
-    global server
-    server = LocalServerThread(app)
-    server.start()
+    global local_server
+    local_server = LocalServerThread(app)
+    local_server.start()
     print(fr'Started {LocalServerThread.THREAD_NAME}, serving: http://127.0.0.1:8080')
     
     time.sleep(.1)
 
-def request_token():
-    return False
-
 # Currently only works if the server has handled zero requests. Otherwise hangs 90-300 seconds before relinquishing control back to the Main Thread.
-# After being stuck for a week, setting daemon=True and just letting the server run indefinitely on the separate thread.
+# After being stuck for a week, setting daemon=True and just letting the server run indefinitely until program exit.
 def stop_local_http_server():
-    server.shutdown()
+    local_server.shutdown()

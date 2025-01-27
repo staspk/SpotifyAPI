@@ -14,19 +14,19 @@ from definitions import SPOTIFY_USER_DATA_DIR
 
 
 
-# song_list = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Luna').getSortedSongStreamingHistory(30)
+# luna_list = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Luna').getSortedSongStreamingHistory(30)
+
+print(SPOTIFY_USER_DATA_DIR)
+
+stan_liked = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Stan').getLikedSongs()
 
 
-# for song in song_list:
-#     print(str(song))
-#     print()
+for song in stan_liked:
+    print(str(song))
+    print()
+print(len(stan_liked))
 
-
-
-if auth_server.validate_token() is False:
-    auth_server.request_token()
-
-    
+auth_server.validate_token()
 
 # SpotifyRequests.saveStreamingHistoryToSpotifyPlaylist(song_list,
 #                                               playlist_name=f"What She Actually Loved",

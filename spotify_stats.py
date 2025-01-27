@@ -35,11 +35,12 @@ class SpotifyUser:
                             self.account_creation_time = datetime.strptime(data['creationTime'], "%Y-%m-%d")
 
         if self.pathsToStreamingHistoryFiles:
-            self.parseStreamingHistory()
+            self._parseStreamingHistory()
         if self.pathToLikedSongs:
-            self.parseLikedSongs()
+            print('supposedly true')
+            self._parseLikedSongs()
 
-    def parseStreamingHistory(self):
+    def _parseStreamingHistory(self):
         recordsIterated = 0
         for file in self.pathsToStreamingHistoryFiles:
             with open(file, 'r', encoding='utf-8') as file:
@@ -70,9 +71,9 @@ class SpotifyUser:
                         raise RuntimeError('Neither Song nor Podcast')
                     
                     recordsIterated += 1
-        print(f'parseStreamingHistory() iterated through: {recordsIterated} records.')
+        print(f'_parseStreamingHistory() iterated through: {recordsIterated} records.')
 
-    def parseLikedSongs(self):
+    def _parseLikedSongs(self):
         with open(self.pathToLikedSongs, 'r', encoding='utf8') as file:
             data = json.load(file)
             for record in data['tracks']:
@@ -104,7 +105,8 @@ class SpotifyUser:
     def getSortedPodcastStreamingHistory(self, minsCutoff = 30) -> list:
         return SpotifyUser._getSortedList(self.podcasts_streamed, minsCutoff)
     
-
+    def getLikedSongs(self) -> list:
+        return SpotifyUser.songsLiked
 
     def compareSongsStreamed(self, other):
         if not isinstance(other, SpotifyUser):
