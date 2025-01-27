@@ -16,16 +16,15 @@ class SpotifyUser:
 
     def __init__(self, spotify_data_dir):
         for file in os.listdir(spotify_data_dir):
-            if file == 'Spotify Extended Streaming History' or file == 'Spotify_Extended_Streaming_History':    # double-check that this is the default name of folder when downloaded from Spotify
+            if file == 'Spotify Extended Streaming History':
                 extended_streaming_history_dir = os.path.join(spotify_data_dir, file)
                 for file_name in os.listdir(extended_streaming_history_dir):
                     if 'Streaming_History_Audio' in file_name:
                         self.pathsToStreamingHistoryFiles.append(os.path.join(extended_streaming_history_dir, file_name))
 
-            if file == 'Spotify Account Data' or file == 'Spotify_Account_Data':        # double-check that this is the default name of folder when downloaded from Spotify
-                # print('green')
+            if file == 'Spotify Account Data':
                 spotify_account_data_dir = os.path.join(spotify_data_dir, file)
-                for file_name in spotify_account_data_dir:
+                for file_name in os.listdir(spotify_account_data_dir):
                     if file_name == 'YourLibrary.json':
                         self.pathToLikedSongs = os.path.join(spotify_account_data_dir, file_name)
                     if file_name == 'Userdata.json':
