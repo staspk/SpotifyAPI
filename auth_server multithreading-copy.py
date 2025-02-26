@@ -5,19 +5,75 @@ from pathlib import Path
 import signal
 import threading
 import time
-import logging
 import webbrowser
 
 import requests, urllib, base64, json
 from flask import Flask, redirect, request, jsonify
-from werkzeug.serving import make_server
+# from werkzeug.serving import make_server
+from wsgiref.simple_server import make_server
 
 from kozubenko.env import Env
 from kozubenko.timer import Timer
 from kozubenko.utils import Utils
 
 
-def worker():
+class LocalServerThread(threading.Thread):
+    THREAD_NAME = 'LocalServerThread'        
+
+    def __init__(self, app: Flask):     
+        threading.Thread.__init__(self, name=LocalServerThread.THREAD_NAME, daemon=True)
+
+        self.server = make_server('127.0.0.1', '8080', app=app)
+        self.ctx = app.app_context()
+        self.ctx.push()
+
+    def run(self):
+        self.server.serve_forever()
+    
+    # Currently only works if the server has handled zero requests. Otherwise hangs 90-300 seconds before relinquishing control back to the Main Thread.
+    # After being stuck for a week, setting daemon=True and just letting the server run indefinitely until program exit.
+    def shutdown(self):
+        print(f'In LocalServerThread.shutdown(). Current Thread: {threading.current_thread().name}')
+        self.server.shutdown()
+        
+
+def validate_token():
+    Env.load()
+    token_expiration_str = Env.vars.get('token_expiration', None)
+    
+    if token_expiration_str is None:
+        request_token()
+        return
+
+    expiration = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
+    now = datetime.now()
+    
+    if now > expiration - timedelta(minutes=3):
+        refresh_token()
+
+def request_token():
+    raise RuntimeError('request_token() currently not implemented')
+    start_local_http_server()
+
+    params = {
+        'response_type': 'code',
+        'client_id': Env.vars['client_id'],
+        'scope': Env.vars['scope'],
+        'redirect_uri': Env.vars['redirect_uri'],
+        'state': Utils.get_randomized_string(16)
+    }
+
+    requests.post('http://127.0.0.1:8080/login', params=params)
+
+    return False
+
+
+
+def start_local_http_server():
+    for thread in threading.enumerate():
+        if thread.name == LocalServerThread.THREAD_NAME:
+            return
+    
     app = Flask(__name__)
 
     @app.route('/')
@@ -26,10 +82,6 @@ def worker():
 
     @app.route('/login')
     def login():
-        Env.load()
-
-        return 'LOGIN'
-
         params = {
             'response_type': 'code',
             'client_id': Env.vars['client_id'],
@@ -37,17 +89,11 @@ def worker():
             'redirect_uri': Env.vars['redirect_uri'],
             'state': Utils.get_randomized_string(16)
         }
-
-        print('redirecting...')
         
         return redirect('https://accounts.spotify.com/authorize?' + urllib.parse.urlencode(params))
 
     @app.route('/callback')
     def callback():
-        Env.load()
-
-        return 'CALLBACK'
-
         code = request.args.get('code', None)
         state = request.args.get('state', None)
 
@@ -91,69 +137,15 @@ def worker():
         else:
             print(f'/CallBack endpoint hit. response.status_code == {response.status_code}')
             return jsonify({'error': 'Failed to get token'}), response.status_code
-        
-    server = make_server('127.0.0.1', 8080, app)
-    ctx = app.app_context()
-    ctx.push()
 
-    server.serve_forever()
+    global local_server
+    local_server = LocalServerThread(app)
+    local_server.start()
+    print(fr'Started {LocalServerThread.THREAD_NAME}, serving: http://127.0.0.1:8080')
+    
+    time.sleep(.1)
 
-def start_local_http_server():
-    global server_process
-
-    server_process = multiprocessing.Process(target=worker, name="LocalServerProcess")
-    server_process.start()
-    # print('Started LocalServerProcess, serving: http://127.0.0.1:8080')
-
+# Currently only works if the server has handled zero requests. Otherwise hangs 90-300 seconds before relinquishing control back to the Main Thread.
+# After being stuck for a week, setting daemon=True and just letting the server run indefinitely until program exit.
 def stop_local_http_server():
-    server_process.terminate()
-
-# Requires 'if __name__ == '__main__':' guard clause from called
-def validate_token(reject=False):
-    Env.load()
-    token_expiration_str = Env.vars.get('token_expiration', None)
-    
-    if token_expiration_str is None or reject is True:
-        request_token()
-        return
-
-    expiration = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
-    now = datetime.now()
-    
-    if now > expiration - timedelta(minutes=3):
-        refresh_token()
-
-def request_token():
-    start_local_http_server()
-
-    print('You need a Spotify Authorization Code to use this program. Please get one by logging in at: http://127.0.0.1:8080')
-    input('When redirected to success page, Press Enter to continue...')
-
-    stop_local_http_server()
-
-def refresh_token():
-    Env.load()
-    refresh_token = Env.vars.get('refresh_token', None)
-    url = 'https://accounts.spotify.com/api/token'
-
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + base64.b64encode(f'{Env.vars['client_id']}:{Env.vars['client_secret']}'.encode()).decode('utf-8')
-    }
-
-    body = {
-        'grant_type': 'refresh_token',
-        'refresh_token': refresh_token
-    }
-
-    response = requests.post(url, headers=headers, data=body)
-
-    if response.status_code == 200:
-        response_data = response.json()
-        Env.save('access_token', response_data['access_token'])
-        token_expiration = datetime.now() + timedelta(seconds=int(response_data['expires_in']))
-        Env.save('token_expiration', token_expiration.strftime('%Y-%m-%d %H:%M'))
-        if 'refresh_token' in response_data:
-            Env.save('refresh_token', response_data['refresh_token'])
-    else:
-        RuntimeError(f'refresh_token() not implemented for response.status_code == {response.status_code}.')
+    local_server.shutdown()

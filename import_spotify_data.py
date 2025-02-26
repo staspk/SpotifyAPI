@@ -17,7 +17,7 @@ def archive(dir_to_archive:str, DATA_CATEGORY):
     Path(output_target_dir).mkdir(parents=True, exist_ok=True)
 
     data_category = dir_to_archive.split('\\')[-1]
-    print(f'Data Category: {data_category}')
+    # print(f'Data Category: {data_category}')
     output_folder_name = f'{data_category} - {created_at}.zip'                  # example: 'Spotify Extended Streaming History - 2025-01-01'
     output_target_dir = os.path.join(output_target_dir, output_folder_name)
     
@@ -37,12 +37,12 @@ def handle_unzip(zipfile_ref:ZipFile, target_folder_in_zip:str, dest_dir:str):
         archive(dest_dir, target_folder_in_zip)
     
     for file_name in zipfile_ref.namelist():
-        if file_name.startswith(target_folder_in_zip + '/') and file_name.endswith('.json'):   # Only .jsons to avoid files like readme.pdf
+        if file_name.startswith(target_folder_in_zip + '/') and file_name.endswith('.json'):   # Only .jsons to avoid importing extraneous files, e.g. readme.pdf
             zipfile_ref.extract(file_name, os.path.join(dest_dir, '..'))
     print(f'handle_unzip(): target_folder_in_zip: {target_folder_in_zip}, dest_dir: {dest_dir}')
 
 # name => data owner/username; path_to_zip => path to 'my_spotify_data.zip'
-def save_user_data_to_project_files(name:str, path_to_zip: str):                        # ONLY SPOTIFY EXTENDED STREAMING HISTORY TESTED WITH REAL DATA. PLEASE RUN TESTS WITH CLAUSE 1/3 TOO: 
+def save_user_data_to_project_files(name:str, path_to_zip: str):
     given_zip = ZipFile(path_to_zip, 'r')
     for file_name in given_zip.namelist():
         if file_name == SPOTIFY_ACCOUNT_DATA + '/':

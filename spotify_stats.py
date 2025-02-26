@@ -85,6 +85,7 @@ class SpotifyUser:
                     numOfDuplicates = self.songDuplicates.pop(repr(song), 0)
                     self.songDuplicates[repr(song)] = (numOfDuplicates + 1)
 
+
     @staticmethod 
     def _getSortedList(dictInQuestion, minsCutoff) -> list:
         toReturnList = []
@@ -104,6 +105,17 @@ class SpotifyUser:
     def getSortedPodcastStreamingHistory(self, minsCutoff = 30) -> list:
         return SpotifyUser._getSortedList(self.podcasts_streamed, minsCutoff)
     
+    def printDuplicateSongs(self):
+        for key, value in self.songDuplicates.items():
+            print(f'{key}: {value}')
+        print(f'Total: {len(self.songDuplicates)}')
+
+    def printLikedSongs(self):
+        for song in SpotifyUser.songsLiked:
+            print(str(song))
+            print()
+        print(f'Total: {len(SpotifyUser.songsLiked)}')
+
     def getLikedSongs(self) -> list:
         return SpotifyUser.songsLiked
 

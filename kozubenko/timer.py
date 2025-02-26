@@ -3,9 +3,10 @@ import time
 class Timer:
 
     def start(msg = ''):
-        Timer.start_time = time.perf_counter()
         if msg:
             print(f'{msg}. Timer Started...')
+            
+        Timer.start_time = time.perf_counter()
 
     def elapsed(msg):
         end = time.perf_counter()

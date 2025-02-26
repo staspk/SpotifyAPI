@@ -16,17 +16,14 @@ from definitions import SPOTIFY_USER_DATA_DIR
 
 # luna_list = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Luna').getSortedSongStreamingHistory(30)
 
-print(SPOTIFY_USER_DATA_DIR)
+# print(SPOTIFY_USER_DATA_DIR)
 
-stan_liked = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Stan').getLikedSongs()
+SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Stan').printLikedSongs()
 
 
-for song in stan_liked:
-    print(str(song))
-    print()
-print(len(stan_liked))
 
-auth_server.validate_token()
+
+# auth_server.validate_token()
 
 # SpotifyRequests.saveStreamingHistoryToSpotifyPlaylist(song_list,
 #                                               playlist_name=f"What She Actually Loved",
@@ -34,6 +31,9 @@ auth_server.validate_token()
 
 
 # Timer.stop()
+
+# if __name__ == '__main__':
+#     auth_server.validate_token(True)
 
 
 

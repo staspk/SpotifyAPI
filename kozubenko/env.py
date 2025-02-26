@@ -6,7 +6,7 @@ class Env:
     vars = {}
 
     def load(path_to_env_file = ENV, key_to_delete:str = None):
-        if Env.loaded == False:
+        if Env.loaded == False:                                         # bug found: key_to_delete wont be deleted if loaded
             with open(path_to_env_file, 'r') as file:
                 for line in file:
                     if '=' in line:                                     # This 4-line-block is responsible for automatically cleaning up on load()
