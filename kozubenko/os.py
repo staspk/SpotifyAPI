@@ -1,6 +1,5 @@
 import os
 
-
 def Downloads_Directory() -> str:
     if os.name == 'nt':
         import winreg
@@ -12,5 +11,5 @@ def Downloads_Directory() -> str:
             return Downloads_Directory
         
     elif os.name == 'posix':  # Both Mac and Linux
-        return os.path.expanduser("~")
+        return os.path.join(os.path.expanduser("~"), "Downloads")
         

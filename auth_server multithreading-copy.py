@@ -1,11 +1,7 @@
 from datetime import datetime, timedelta
-import multiprocessing, subprocess
-import os
 from pathlib import Path
-import signal
 import threading
 import time
-import webbrowser
 
 import requests, urllib, base64, json
 from flask import Flask, redirect, request, jsonify
@@ -13,7 +9,6 @@ from flask import Flask, redirect, request, jsonify
 from wsgiref.simple_server import make_server
 
 from kozubenko.env import Env
-from kozubenko.timer import Timer
 from kozubenko.utils import Utils
 
 
@@ -30,9 +25,11 @@ class LocalServerThread(threading.Thread):
     def run(self):
         self.server.serve_forever()
     
-    # Currently only works if the server has handled zero requests. Otherwise hangs 90-300 seconds before relinquishing control back to the Main Thread.
-    # After being stuck for a week, setting daemon=True and just letting the server run indefinitely until program exit.
     def shutdown(self):
+        """
+        Currently only works if the server has handled zero requests. Otherwise hangs 90-300 seconds before relinquishing control back and letting Program end.
+        After being stuck for a week, setting daemon=True and just letting the server run indefinitely until program exit.
+        """
         print(f'In LocalServerThread.shutdown(). Current Thread: {threading.current_thread().name}')
         self.server.shutdown()
         

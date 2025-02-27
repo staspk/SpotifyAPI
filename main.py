@@ -4,6 +4,7 @@ import sys
 import threading
 import time
 import auth_server
+from kozubenko.utils import *
 from spotify_requests import SpotifyRequests
 from spotify_stats import SpotifyUser
 from kozubenko.env import Env
@@ -18,12 +19,20 @@ from definitions import SPOTIFY_USER_DATA_DIR
 
 # print(SPOTIFY_USER_DATA_DIR)
 
-SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Stan').printLikedSongs()
 
 
 
 
-# auth_server.validate_token()
+if __name__ == '__main__':
+    # SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Stan').printLikedSongs()
+    auth_server.validate_token(True)
+    
+    
+    
+    
+    
+    
+    
 
 # SpotifyRequests.saveStreamingHistoryToSpotifyPlaylist(song_list,
 #                                               playlist_name=f"What She Actually Loved",

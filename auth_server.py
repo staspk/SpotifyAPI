@@ -1,24 +1,19 @@
 from datetime import datetime, timedelta
-import multiprocessing, subprocess
-import os
+import multiprocessing
 from pathlib import Path
-import signal
-import threading
-import time
-import logging
-import webbrowser
 
-import requests, urllib, base64, json
+import requests, urllib, base64, json, logging
 from flask import Flask, redirect, request, jsonify
 from werkzeug.serving import make_server
 
 from kozubenko.env import Env
-from kozubenko.timer import Timer
-from kozubenko.utils import Utils
+from kozubenko.utils import Utils, print_dark_gray, print_gray, print_green, print_yellow
 
 
 def worker():
     app = Flask(__name__)
+
+    app.logger.disabled
 
     @app.route('/')
     def home():
@@ -27,8 +22,6 @@ def worker():
     @app.route('/login')
     def login():
         Env.load()
-
-        return 'LOGIN'
 
         params = {
             'response_type': 'code',
@@ -45,8 +38,6 @@ def worker():
     @app.route('/callback')
     def callback():
         Env.load()
-
-        return 'CALLBACK'
 
         code = request.args.get('code', None)
         state = request.args.get('state', None)
@@ -103,6 +94,7 @@ def start_local_http_server():
 
     server_process = multiprocessing.Process(target=worker, name="LocalServerProcess")
     server_process.start()
+
     # print('Started LocalServerProcess, serving: http://127.0.0.1:8080')
 
 def stop_local_http_server():
@@ -114,27 +106,36 @@ def validate_token(reject=False):
     token_expiration_str = Env.vars.get('token_expiration', None)
     
     if token_expiration_str is None or reject is True:
-        request_token()
+        _request_token()
         return
 
     expiration = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
     now = datetime.now()
     
     if now > expiration - timedelta(minutes=3):
-        refresh_token()
+        _refresh_token()
 
-def request_token():
+def _request_token():
     start_local_http_server()
 
-    print('You need a Spotify Authorization Code to use this program. Please get one by logging in at: http://127.0.0.1:8080')
-    input('When redirected to success page, Press Enter to continue...')
+    print_green('\nauth_server has spun up server for Spotify Authorization Code Flow.', False)
+    print_yellow(' Login here: http://127.0.0.1:8080')
+    print_green('lost? auth_server.print_help()')
+    print()
+
+    input(f'\033[93m  When redirected to success page, Press Enter to continue...\033[0m')
 
     stop_local_http_server()
 
-def refresh_token():
+def _refresh_token():
     Env.load()
     refresh_token = Env.vars.get('refresh_token', None)
     url = 'https://accounts.spotify.com/api/token'
+
+    if not refresh_token:
+        print('Found an expired token in .env, but refresh_token missing in .env file')
+        print('Please re-run with auth_server.validate_token(reject=True) to get new Authorization Token')
+        exit()
 
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -156,4 +157,17 @@ def refresh_token():
         if 'refresh_token' in response_data:
             Env.save('refresh_token', response_data['refresh_token'])
     else:
-        RuntimeError(f'refresh_token() not implemented for response.status_code == {response.status_code}.')
+        RuntimeError(f'_refresh_token() not implemented for response.status_code == {response.status_code}.')
+
+def print_help():
+    print_yellow('\nSpotify Authorization Code Flow -> ')
+    print_yellow('    Use auth_server.validate_token(reject = False). Required example .env file:')
+    print_gray('project_root/.env/.env:')
+    print_dark_gray(f'client_id=7b0acca87e49424190a5eee6c8a63fe9')
+    print_dark_gray('client_secret=f53b708a121e4e3da5aee75814c394ab')
+    print_dark_gray('scope=playlist-modify-public user-top-read user-library-read user-library-modify')
+    print_dark_gray(f'redirect_uri=http://127.0.0.1:8080/callback')
+    print()
+    print_yellow('For more details, see: https://developer.spotify.com/documentation/web-api/tutorials/code-flow\n')
+    print('\n')
+
