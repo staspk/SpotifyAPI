@@ -1,7 +1,8 @@
 ## SpotifyAPI
-- See your all-time favorites
+auth_server.py will be updated in the near future to reflect the new ruleset changes to Spotify's Authorization Code Flow API (February, 2025)
+<!-- - See your all-time favorites
 - Generate lost song candidates
-- Create / Modify Playlists
+- Create / Modify Playlists -->
 
 ### How to get your Spotify Data
 - https://www.spotify.com/account
