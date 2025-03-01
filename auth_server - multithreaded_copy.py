@@ -12,6 +12,9 @@ from kozubenko.env import Env
 from kozubenko.utils import Utils
 
 
+"""
+Currently leaving this copy to work on it in the future. See LocalsServerThread.shutdown() for details
+"""
 class LocalServerThread(threading.Thread):
     THREAD_NAME = 'LocalServerThread'        
 
@@ -27,8 +30,14 @@ class LocalServerThread(threading.Thread):
     
     def shutdown(self):
         """
-        Currently only works if the server has handled zero requests. Otherwise hangs 90-300 seconds before relinquishing control back and letting Program end.
-        After being stuck for a week, setting daemon=True and just letting the server run indefinitely until program exit.
+        Currently only works if the server has handled zero requests. If even one request has been handled, when the natural end of your console program comes,
+        it will hang for 90-300 seconds, before letting the Program finally end. You will be locked up until then. Ctrl-c, Ctrl-x will not force-end it either.
+        Have to kill the task either through Task Manager/powershell script.
+
+        One workaround is setting daemon=True. Server will die on Program end. The drawback: even when you move on to do other unrelated things in the Program,
+        your server will still be running in the background. Feels wrong, as it's using unecessary resources.
+
+        I have moved on to a multiprocessing version of the code for the time being. I still want to get this to work in the future.
         """
         print(f'In LocalServerThread.shutdown(). Current Thread: {threading.current_thread().name}')
         self.server.shutdown()

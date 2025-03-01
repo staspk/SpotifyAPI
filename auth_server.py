@@ -1,8 +1,12 @@
+"""
+`auth_server.validate_token()`\n
+`auth_server.print_help()`
+"""
 from datetime import datetime, timedelta
 import multiprocessing
 from pathlib import Path
 
-import requests, urllib, base64, json, logging
+import requests, urllib, base64, json
 from flask import Flask, redirect, request, jsonify
 from werkzeug.serving import make_server
 
@@ -10,10 +14,13 @@ from kozubenko.env import Env
 from kozubenko.utils import Utils, print_dark_gray, print_gray, print_green, print_yellow
 
 
-def worker():
+
+def _server_worker():
     app = Flask(__name__)
 
-    app.logger.disabled
+    import logging
+    log = logging.getLogger('werkzeug')
+    log.setLevel(logging.ERROR)
 
     @app.route('/')
     def home():
@@ -30,8 +37,6 @@ def worker():
             'redirect_uri': Env.vars['redirect_uri'],
             'state': Utils.get_randomized_string(16)
         }
-
-        print('redirecting...')
         
         return redirect('https://accounts.spotify.com/authorize?' + urllib.parse.urlencode(params))
 
@@ -91,22 +96,25 @@ def worker():
 
 def start_local_http_server():
     global server_process
-
-    server_process = multiprocessing.Process(target=worker, name="LocalServerProcess")
+    server_process = multiprocessing.Process(target=_server_worker, name="LocalServerProcess")
+    
     server_process.start()
 
-    # print('Started LocalServerProcess, serving: http://127.0.0.1:8080')
-
-def stop_local_http_server():
+def stop_local_http_server(server_process):
     server_process.terminate()
+    server_process.join()
 
-# Requires 'if __name__ == '__main__':' guard clause from called
 def validate_token(reject=False):
+    """
+    The only "public" function you need to get a Spotify Authorization Token.
+
+    `if __name__ == '__main__':` guard clause required due to use of multi-processing
+    """
     Env.load()
     token_expiration_str = Env.vars.get('token_expiration', None)
     
     if token_expiration_str is None or reject is True:
-        _request_token()
+        _request_token(server_process)
         return
 
     expiration = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
@@ -115,17 +123,17 @@ def validate_token(reject=False):
     if now > expiration - timedelta(minutes=3):
         _refresh_token()
 
-def _request_token():
-    start_local_http_server()
+def _request_token(server_process):
+    start_local_http_server(server_process)
 
     print_green('\nauth_server has spun up server for Spotify Authorization Code Flow.', False)
     print_yellow(' Login here: http://127.0.0.1:8080')
-    print_green('lost? auth_server.print_help()')
+    print_green('  lost? call auth_server.print_help()')
     print()
 
     input(f'\033[93m  When redirected to success page, Press Enter to continue...\033[0m')
 
-    stop_local_http_server()
+    stop_local_http_server(server_process)
 
 def _refresh_token():
     Env.load()

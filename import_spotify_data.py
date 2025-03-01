@@ -41,8 +41,11 @@ def handle_unzip(zipfile_ref:ZipFile, target_folder_in_zip:str, dest_dir:str):
             zipfile_ref.extract(file_name, os.path.join(dest_dir, '..'))
     print(f'handle_unzip(): target_folder_in_zip: {target_folder_in_zip}, dest_dir: {dest_dir}')
 
-# name => data owner/username; path_to_zip => path to 'my_spotify_data.zip'
 def save_user_data_to_project_files(name:str, path_to_zip: str):
+    """
+    name: data owner/username. Becomes name of the folder under which data is stored.\n
+    path_to_zip: path to 'my_spotify_data.zip'
+    """
     given_zip = ZipFile(path_to_zip, 'r')
     for file_name in given_zip.namelist():
         if file_name == SPOTIFY_ACCOUNT_DATA + '/':
