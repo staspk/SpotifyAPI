@@ -5,8 +5,15 @@ class Utils:
     def get_randomized_string(str_length):
         return ''.join(random.choices(string.ascii_letters,
                                         k=str_length))
-    
 
+def print_list(list: list):
+    for item in list:
+        print(f'{item}\n')
+
+def print_dict(dict: dict):
+    for key, value in dict.items():
+        print(f'{key}: {value}\n')
+    
 def print_yellow(text, new_line=True):
     print(f'\033[93m{text}\033[0m', end='\n' if new_line else '')
 

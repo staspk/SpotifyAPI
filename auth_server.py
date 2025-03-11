@@ -164,6 +164,7 @@ def _refresh_token():
         Env.save('token_expiration', token_expiration.strftime('%Y-%m-%d %H:%M'))
         if 'refresh_token' in response_data:
             Env.save('refresh_token', response_data['refresh_token'])
+            print_green('new refresh token saved to .env')
     else:
         RuntimeError(f'_refresh_token() not implemented for response.status_code == {response.status_code}.')
 

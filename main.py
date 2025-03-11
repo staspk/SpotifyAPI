@@ -17,20 +17,15 @@ from definitions import SPOTIFY_USER_DATA_DIR
 
 
 
-# luna_list = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Luna').getSortedSongStreamingHistory(30)
-
-# print(SPOTIFY_USER_DATA_DIR)
-
-
-
-
-
 if __name__ == '__main__':
-    # SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Stan').printLikedSongs()
+    auth_server.validate_token()
 
+    luna_list = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Luna').getSortedSongStreamingHistory(30)
 
-    auth_server.validate_token(True)
+    print_list(luna_list)
     
+    
+
     
     
     
