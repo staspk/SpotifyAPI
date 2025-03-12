@@ -20,20 +20,19 @@ from definitions import SPOTIFY_USER_DATA_DIR
 if __name__ == '__main__':
     auth_server.validate_token()
 
-    luna_list = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Luna').getSortedSongStreamingHistory(30)
+    SpotifyRequests.get_user_id(None)
 
-    print_list(luna_list)
-    
-    
 
     
     
     
     
 
-# SpotifyRequests.saveStreamingHistoryToSpotifyPlaylist(song_list,
-#                                               playlist_name=f"What She Actually Loved",
-#                                               description=f'I will find the average song length * 7 listens sometime soon and that will be the cutoff')
+# SpotifyRequests.saveStreamingHistoryToSpotifyPlaylist(
+#     song_list,
+#     playlist_name=f"What She Actually Loved",
+#     description=f'I will find the average song length * 7 listens sometime soon and that will be the cutoff'
+# )
 
 
 # Timer.stop()

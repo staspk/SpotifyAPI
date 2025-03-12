@@ -4,8 +4,8 @@ from datetime import datetime
 from spotify_models import ISong, IStreamed, Song, LikedSong, Podcast
 
 class SpotifyUser:
-    pathsToStreamingHistoryFiles:list = []
-    pathToLikedSongs = None
+    streaming_history_files:list = []
+    your_library_json_file = None                                 # Spotify Account Data/YourLibrary.json
     account_creation_time:datetime = None
 
     songs_streamed:    dict[str, Song]    = {}
@@ -20,28 +20,28 @@ class SpotifyUser:
                 extended_streaming_history_dir = os.path.join(spotify_data_dir, file)
                 for file_name in os.listdir(extended_streaming_history_dir):
                     if 'Streaming_History_Audio' in file_name:
-                        self.pathsToStreamingHistoryFiles.append(os.path.join(extended_streaming_history_dir, file_name))
+                        self.streaming_history_files.append(os.path.join(extended_streaming_history_dir, file_name))
 
             if file == 'Spotify Account Data':
                 spotify_account_data_dir = os.path.join(spotify_data_dir, file)
                 for file_name in os.listdir(spotify_account_data_dir):
                     if file_name == 'YourLibrary.json':
-                        self.pathToLikedSongs = os.path.join(spotify_account_data_dir, file_name)
+                        self.your_library_json_file = os.path.join(spotify_account_data_dir, file_name)
                     if file_name == 'Userdata.json':
                         userData = os.path.join(spotify_account_data_dir, file_name)
                         with open(userData, 'r') as json_file:
                             data = json.load(json_file)
                             self.account_creation_time = datetime.strptime(data['creationTime'], "%Y-%m-%d")
 
-        if self.pathsToStreamingHistoryFiles:
+        if self.streaming_history_files:
             self._parseStreamingHistory()
-        if self.pathToLikedSongs:
+        if self.your_library_json_file:
             print('supposedly true')
             self._parseLikedSongs()
 
     def _parseStreamingHistory(self):
         recordsIterated = 0
-        for file in self.pathsToStreamingHistoryFiles:
+        for file in self.streaming_history_files:
             with open(file, 'r', encoding='utf-8') as file:
                 data = json.load(file)
                 for record in data:
@@ -73,10 +73,10 @@ class SpotifyUser:
         print(f'_parseStreamingHistory() iterated through: {recordsIterated} records.')
 
     def _parseLikedSongs(self):
-        with open(self.pathToLikedSongs, 'r', encoding='utf8') as file:
+        with open(self.your_library_json_file, 'r', encoding='utf8') as file:
             data = json.load(file)
             for record in data['tracks']:
-                song = LikedSong(record['track'], record['artist'], record['album'])
+                song = LikedSong(record['track'], record['artist'], record['album'], record['uri'])
 
                 fromLiked = self.songsLiked.get(repr(song), None)
                 if fromLiked is None:
@@ -99,10 +99,10 @@ class SpotifyUser:
         # print(f'Sorting done in _getSortedList(). toReturnList Count: {len(toReturnList)}')
         return toReturnList
 
-    def getSortedSongStreamingHistory(self, minsCutoff = 30) -> list:
+    def getSortedSongStreamingHistory(self, minsCutoff = 30) -> list[Song]:
         return SpotifyUser._getSortedList(self.songs_streamed, minsCutoff)
     
-    def getSortedPodcastStreamingHistory(self, minsCutoff = 30) -> list:
+    def getSortedPodcastStreamingHistory(self, minsCutoff = 30) -> list[Song]:
         return SpotifyUser._getSortedList(self.podcasts_streamed, minsCutoff)
     
     def printDuplicateSongs(self):
