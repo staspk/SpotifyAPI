@@ -1,20 +1,33 @@
+from dataclasses import dataclass
 import os, json
-from pathlib import Path
 from datetime import datetime
-from spotify_models import ISong, IStreamed, Song, LikedSong, Podcast
+from typing import Self
+from kozubenko.utils import print_green
+from spotify_models import IStreamed, Song, LikedSong, Podcast
 
+@dataclass()
 class SpotifyUser:
-    streaming_history_files:list = []
-    your_library_json_file = None                                 # Spotify Account Data/YourLibrary.json
-    account_creation_time:datetime = None
+    """
+    init with spotify_data_dir => a path directory named after username/name of data owner. Possible folders inside:
+    - Spotify Account Data
+    - Spotify Extended Streaming History
+    - Spotify Technical Log Information
 
-    songs_streamed:    dict[str, Song]    = {}
-    podcasts_streamed: dict[str, Podcast] = {}
-
-    songsLiked:     dict[str, LikedSong] = {}
-    songDuplicates: dict[str, int] = {}
-
+    ***For best results, use import_spotify_data.py to import my_spotify_data.zip to preserve correct folder hierarchy***
+    """
     def __init__(self, spotify_data_dir):
+        self.user_name = os.path.basename(spotify_data_dir)
+        
+        self.streaming_history_files:list = []
+        self.your_library_json_file = None                          # Spotify Account Data/YourLibrary.json -> list of liked songs
+        self.account_creation_time:datetime = None
+
+        self.songs_streamed:    dict[str, Song]    = {}
+        self.podcasts_streamed: dict[str, Podcast] = {}
+
+        self.songs_liked:       dict[str, LikedSong] = {}
+        self.songs_duplicates:  dict[str, int] = {}
+
         for file in os.listdir(spotify_data_dir):
             if file == 'Spotify Extended Streaming History':
                 extended_streaming_history_dir = os.path.join(spotify_data_dir, file)
@@ -62,14 +75,15 @@ class SpotifyUser:
                         self.podcasts_streamed[repr(audio)] = audio
 
                     elif audio is None:
-                        print(f"Garbage Data at Record Read Cycle: {recordsIterated}")
+                        # print(f"Garbage Data at Record Read Cycle: {recordsIterated}")
+                        pass
 
                     else:
                         print(f"RuntimeError Reached on Cycle: {recordsIterated}")
                         raise RuntimeError('Neither Song nor Podcast')
                     
                     recordsIterated += 1
-        print(f'_parseStreamingHistory() iterated through: {recordsIterated} records.')
+        print_green(f'{self.user_name}: iterated through {recordsIterated} records in Extended Streaming History')
 
     def _parseLikedSongs(self):
         with open(self.your_library_json_file, 'r', encoding='utf8') as file:
@@ -77,13 +91,12 @@ class SpotifyUser:
             for record in data['tracks']:
                 song = LikedSong(record['track'], record['artist'], record['album'], record['uri'])
 
-                fromLiked = self.songsLiked.get(repr(song), None)
+                fromLiked = self.songs_liked.get(repr(song), None)
                 if fromLiked is None:
-                    self.songsLiked[repr(song)] = song
+                    self.songs_liked[repr(song)] = song
                 else:
-                    numOfDuplicates = self.songDuplicates.pop(repr(song), 0)
-                    self.songDuplicates[repr(song)] = (numOfDuplicates + 1)
-
+                    numOfDuplicates = self.songs_duplicates.pop(repr(song), 0)
+                    self.songs_duplicates[repr(song)] = (numOfDuplicates + 1)
 
     @staticmethod 
     def _getSortedList(dictInQuestion, minsCutoff) -> list:
@@ -98,39 +111,42 @@ class SpotifyUser:
         # print(f'Sorting done in _getSortedList(). toReturnList Count: {len(toReturnList)}')
         return toReturnList
 
-    def getSortedSongStreamingHistory(self, minsCutoff = 30) -> list[Song]:
-        return SpotifyUser._getSortedList(self.songs_streamed, minsCutoff)
+    def getSortedSongStreamingHistory(self, minsCutoff = 30, ascending=False) -> list[Song]:
+        list = SpotifyUser._getSortedList(self.songs_streamed, minsCutoff)
+        if not ascending:
+            list.sort(key=lambda song: song.total_ms_played, reverse=True)
+        return list
     
     def getSortedPodcastStreamingHistory(self, minsCutoff = 30) -> list[Song]:
         return SpotifyUser._getSortedList(self.podcasts_streamed, minsCutoff)
     
     def printDuplicateSongs(self):
-        for key, value in self.songDuplicates.items():
+        for key, value in self.songs_duplicates.items():
             print(f'{key}: {value}')
-        print(f'Total: {len(self.songDuplicates)}')
+        print(f'Total: {len(self.songs_duplicates)}')
 
     def printLikedSongs(self):
-        for song in SpotifyUser.songsLiked:
+        for song in SpotifyUser.songs_liked:
             print(str(song))
             print()
-        print(f'Total: {len(SpotifyUser.songsLiked)}')
+        print(f'Total: {len(SpotifyUser.songs_liked)}')
 
     def getLikedSongs(self) -> list:
-        return SpotifyUser.songsLiked
+        return SpotifyUser.songs_liked
 
-    def compareSongsStreamed(self, other):
+    def compareStreamedSongs(self, other:Self) -> list[tuple[Song, Song]]:
         if not isinstance(other, SpotifyUser):
-            return AssertionError('other must be an instance of Spotify')
+            return AssertionError('other must be an instance of SpotifyUser')
         
         keys1 = self.songs_streamed.keys()
         keys2 = other.songs_streamed.keys()
-        sharedKeys: list[Song, Song] = []
+        shared_songs: list[tuple[Song, Song]] = []
         
         for key in keys1:
             if keys2.__contains__(key):
-                sharedKeys.append(self.songs_streamed[key], other.songs_streamed[key])
+                shared_songs.append(self.songs_streamed[key], other.songs_streamed[key])
 
-        return sharedKeys
+        return shared_songs
 
     def getLostSongCandidates(self, minsCutoff=10) -> list:
         if len(self.songs_streamed) == 0:
@@ -143,8 +159,8 @@ class SpotifyUser:
             if song.total_ms_played > msCutoff:
                 songsStreamedCopy[repr(song)] = song
 
-        if len(self.songsLiked) > 0:
-            for song in self.songsLiked.values():
+        if len(self.songs_liked) > 0:
+            for song in self.songs_liked.values():
                 songsStreamedCopy.pop(repr(song), None)
 
         count = 0
