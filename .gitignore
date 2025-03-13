@@ -5,3 +5,20 @@ Spotify User Data
 generated_data
 __pycache__
 test.py
+
+
+# Node/ts
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+coverage/
+.DS_Store
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace

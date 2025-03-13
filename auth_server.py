@@ -100,7 +100,7 @@ def start_local_http_server():
     
     server_process.start()
 
-def stop_local_http_server(server_process):
+def stop_local_http_server():
     server_process.terminate()
     server_process.join()
 
@@ -114,7 +114,7 @@ def validate_token(reject=False):
     token_expiration_str = Env.vars.get('token_expiration', None)
     
     if token_expiration_str is None or reject is True:
-        _request_token(server_process)
+        _request_token()
         return
 
     expiration = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
@@ -123,8 +123,8 @@ def validate_token(reject=False):
     if now > expiration - timedelta(minutes=3):
         _refresh_token()
 
-def _request_token(server_process):
-    start_local_http_server(server_process)
+def _request_token():
+    start_local_http_server()
 
     print_green('\nauth_server has spun up server for Spotify Authorization Code Flow.', False)
     print_yellow(' Login here: http://127.0.0.1:8080')
@@ -133,7 +133,7 @@ def _request_token(server_process):
 
     input(f'\033[93m  When redirected to success page, Press Enter to continue...\033[0m')
 
-    stop_local_http_server(server_process)
+    stop_local_http_server()
 
 def _refresh_token():
     Env.load()
@@ -170,7 +170,7 @@ def _refresh_token():
 
 def print_help():
     print_yellow('\nSpotify Authorization Code Flow -> ')
-    print_yellow('    Use auth_server.validate_token(reject = False). Required example .env file:')
+    print_yellow('    Use auth_server.validate_token(). Required example .env file:')
     print_gray('project_root/.env/.env:')
     print_dark_gray(f'client_id=7b0acca87e49424190a5eee6c8a63fe9')
     print_dark_gray('client_secret=f53b708a121e4e3da5aee75814c394ab')

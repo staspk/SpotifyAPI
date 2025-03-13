@@ -1,0 +1,20 @@
+{
+  "name": "spotify-api",
+  "version": "1.0.0",
+  "description": "auth_server.py will be updated in the near future to reflect the new ruleset changes to Spotify's Authorization Code Flow API (February, 2025)\r <!-- - See your all-time favorites\r - Generate lost song candidates\r - Create / Modify Playlists -->",
+  "homepage": "https://github.com/staspk/Spotify-History#readme",
+  "bugs": {
+    "url": "https://github.com/staspk/Spotify-History/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/staspk/Spotify-History.git"
+  },
+  "license": "ISC",
+  "author": "Stanislav Kozubenko",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
