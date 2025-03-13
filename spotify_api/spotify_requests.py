@@ -84,7 +84,9 @@ class SimpleRequests:
 
 
 class CreatePlaylistRequest(IHandleRequest):
-
+    """
+    See: https://developer.spotify.com/documentation/web-api/reference/create-playlist
+    """
     id: PlaylistId = None
 
     def __init__(self, user_id:str, access_token:str, playlist_name = 'Playlist1', public = True, description = ''):
@@ -138,6 +140,8 @@ class SaveToPlaylistRequest(IHandleRequest):
     Implements IHandleRequest:
     - Handle()
     - Result()
+
+    See: https://developer.spotify.com/documentation/web-api/reference/add-tracks-to-playlist
     """
 
     id: PlaylistId = None
@@ -176,10 +180,9 @@ class SaveToPlaylistRequest(IHandleRequest):
             return request
 
     def Handle(self, playlist: list[Song]) -> Self:
-        uris = ''
+        uris = []
         for song in playlist:
-            uris += f'{song.uri}, '
-        uris = uris[:-2]
+            uris.append(song.uri)
 
         response = requests.post(
             url = f'https://api.spotify.com/v1/playlists/{self.id}/tracks',
@@ -196,12 +199,10 @@ class SaveToPlaylistRequest(IHandleRequest):
         if response.status_code == 201:
             self.result = 'Success'
         else:
-            self.errorMsg = ErrorMsg(f'response.status_code: {response.status_code}')
+            self.errorMsg = ErrorMsg(f'response.status_code: {response.status_code}\n')
             self.errorMsg.message += response.json().get('error').get('message')
 
         return self
-
-        
     
     def Result(self, print=False) -> Union[str, ErrorMsg]:
         if self.result:
