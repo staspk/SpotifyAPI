@@ -87,8 +87,6 @@ class Song(ISong, IStreamed):
 class LikedSong(ISong):
     uri:str
 
-    @classmethod
-
     def __repr__(self):
         return f'LikedSong:{self.title}:{self.artist}'
 

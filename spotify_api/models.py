@@ -8,3 +8,6 @@ class PlaylistId():
         if Id is None:
             raise ValueError('Id cannot be None')
         object.__setattr__(self, 'Id', Id)
+
+    def __str__(self):
+        return self.Id

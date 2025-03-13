@@ -1,13 +1,14 @@
 from multiprocessing import Process
 import multiprocessing
 import os
+from pathlib import Path
 import subprocess
 import sys
 import threading
 import time
 import auth_server
 from kozubenko.utils import *
-from spotify_api.spotify_requests import SimpleRequests
+from spotify_api.spotify_requests import *
 from spotify_stats import SpotifyUser
 from kozubenko.env import Env
 from kozubenko.timer import Timer
@@ -22,16 +23,35 @@ if __name__ == '__main__':
     auth_server.validate_token()
     access_token = Env.vars['access_token']
 
+    luna_songs = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Luna').getSortedSongStreamingHistory(300)
+    print(len(luna_songs))
 
-    # SpotifyRequests.create_spotify_playlist('staspk')
+    print(luna_songs[2])
 
-    # handledReq = CreatePlaylistRequest('stasp', Env.vars['access_token']).Handle()
+    # SimpleRequests.get_playlist('7LmSTLoNwrzgTmBbMML9EV', access_token)
+    # SimpleRequests.get_user_playlists(access_token)
 
-    # SaveToPlaylistRequest.Exising_Playlist(PlaylistId('4R79CbpxOWa95IGcm0Wtqu'))
 
-    # SaveToPlaylistRequest('PlaylistName')
+    request = CreatePlaylistRequest('staspk', 'dfghjk', 'TestPlaylist')
 
-    # SimpleRequests.get_playlist('fghj', access_token)
+    if(not request.result):
+        print_green('request.result is falsy')
+
+    request.Handle().Result(True)
+
+    print()
+
+    if(not request.result):
+        print_green('request.result is still falsy')
+
+    if(request.errorMsg):
+        print_cyan('request.errorMsg is truthy')
+
+    pass
+
+    # SaveToPlaylistRequest.New_Playlist('staspk', access_token, "Lune's Favorites").Handle(luna_songs)
+    # SaveToPlaylistRequest.Existing_Playlist(PlaylistId('7LmSTLoNwrzgTmBbMML9EV'), access_token).Handle(luna_songs).Result(print)
+
 
 
 

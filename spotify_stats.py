@@ -36,7 +36,6 @@ class SpotifyUser:
         if self.streaming_history_files:
             self._parseStreamingHistory()
         if self.your_library_json_file:
-            print('supposedly true')
             self._parseLikedSongs()
 
     def _parseStreamingHistory(self):

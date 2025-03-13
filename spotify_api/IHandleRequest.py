@@ -9,15 +9,19 @@ class ErrorMsg():
         if message is None:
             raise ValueError('message cannot be none in ErrorMsg init')
         self.message = message
+    
+    def __str__(self):
+        self.message
 
 
 class IHandleRequest(ABC):
-    ErrorMsg: ErrorMsg
+    result: any = None
+    errorMsg: ErrorMsg = None
 
     @abstractmethod
     def Handle() -> Self:
         pass
 
     @abstractmethod
-    def Result() -> Union[any, ErrorMsg]:
+    def Result(self, print=False) -> Union[any, ErrorMsg]:
         pass
