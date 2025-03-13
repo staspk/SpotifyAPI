@@ -4,7 +4,7 @@ from pathlib import Path
 from tkinter import Tk, filedialog
 
 from kozubenko.os import Downloads_Directory
-from definitions import TEMP_DIR, SPOTIFY_USER_DATA_DIR, SPOTIFY_USER_DATA_ARCHIVE_DIR
+from definitions import SPOTIFY_USER_DATA_DIR, SPOTIFY_USER_DATA_ARCHIVE_DIR
 from definitions import SPOTIFY_ACCOUNT_DATA, SPOTIFY_EXTENDED_STREAMING_HISTORY, SPOTIFY_TECHNICAL_LOG
 
 from zipfile import ZipFile, ZIP_DEFLATED
