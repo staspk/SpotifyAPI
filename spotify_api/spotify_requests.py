@@ -1,13 +1,8 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from enum import Enum
-import json
-import pprint
-from typing import Callable, Protocol, Self, Union
-import requests
+import json, time, requests
+from typing import Self, Union
 from kozubenko.env import Env
 from kozubenko.utils import *
-from spotify_api.IHandleRequest import ErrorMsg, IHandleRequest
+from spotify_api.interfaces import *
 from spotify_api.models import PlaylistId
 from spotify_models import Song
 
@@ -80,16 +75,14 @@ class SimpleRequests:
             print_red(f'error message: {response.json().get('error').get('message')}')
 
 
-
-
-
 class CreatePlaylistRequest(IHandleRequest):
     """
     See: https://developer.spotify.com/documentation/web-api/reference/create-playlist
     """
-    id: PlaylistId = None
-
+    
     def __init__(self, user_id:str, access_token:str, playlist_name = 'Playlist1', public = True, description = ''):
+        super().__init__()
+        self.id: PlaylistId = None
         self.user_id = user_id
         self.access_token = access_token
         self.playlist_name = playlist_name
@@ -97,26 +90,30 @@ class CreatePlaylistRequest(IHandleRequest):
         self.public = public
     
     def Handle(self) -> Self:
-        endpoint = f'https://api.spotify.com/v1/users/{self.user_id}/playlists'
-
-        headers = {
-            'content-type': 'application/json',
-            'Authorization': f'Bearer {self.access_token}'
-        }
-        request_body = {
-            'name': self.playlist_name,
-            'description': self.description,
-            'public': self.public
-        }
-
-        response = requests.post(url=endpoint, headers=headers, json=request_body)
+        """
+        After Handle() is executed:\n
+        `self.result == (PlaylistId | None)`\n
+        `self.errorMsg set if self.result == None`
+        """
+        response = requests.post(
+            url = f'https://api.spotify.com/v1/users/{self.user_id}/playlists',
+            headers = {
+                'content-type': 'application/json',
+                'Authorization': f'Bearer {self.access_token}'
+            },
+            json = {
+                'name': self.playlist_name,
+                'description': self.description,
+                'public': self.public
+            }
+        )
 
         if response.status_code == 201:
             data = response.json()
             self.id = PlaylistId(data.get('id'))
+            self.result = self.id
         else:
-            self.errorMsg = f'response.status_code: {response.status_code}\n'
-            self.errorMsg += f'{response.json().get('error').get('message')}'
+            self.errorMsg = ErrorMsg(f'response.status_code: {response.status_code}\n{response.json().get('error').get('message')}')
 
         return self
 
@@ -143,20 +140,19 @@ class SaveToPlaylistRequest(IHandleRequest):
 
     See: https://developer.spotify.com/documentation/web-api/reference/add-tracks-to-playlist
     """
-
-    id: PlaylistId = None
-
+ 
     @staticmethod
     def New_Playlist(user_id:str, access_token:str, playlist_name:str, description = '') -> "SaveToPlaylistRequest":
         result = CreatePlaylistRequest(user_id, access_token, playlist_name, True, description).Handle().Result()
-        if isinstance(result, ErrorMsg):
-            raise RuntimeError(f'Cannot continue due to error:\n{result}')
-        if isinstance(result, PlaylistId):
+        if type(result) is PlaylistId:
             request = SaveToPlaylistRequest()
-            request.id = result
+            request.playlistId = result
             request.user_id = user_id
             request.access_token = access_token
+            request.playlist_name = playlist_name
             return request
+        else:
+            raise RuntimeError(f'Cannot continue due to error:\n{result.message}')
 
     @staticmethod
     def Existing_Playlist(id:Union[str, PlaylistId], access_token) -> "SaveToPlaylistRequest":
@@ -164,7 +160,7 @@ class SaveToPlaylistRequest(IHandleRequest):
             raise AssertionError('Exising_Playlist Id enforced type: str | PlaylistId')
         
         if isinstance(id, str):
-            id = PlaylistId(Id)
+            id = PlaylistId(id)
 
         response = requests.get(                                            # Checking if playlist exists / access_token is legal
             url=f'https://api.spotify.com/v1/playlists/{id}',
@@ -175,40 +171,83 @@ class SaveToPlaylistRequest(IHandleRequest):
             raise RuntimeError('Playlist not found')
         else:
             request = SaveToPlaylistRequest()
-            request.id = id
+            request.playlistId = id
             request.access_token = access_token
             return request
 
-    def Handle(self, playlist: list[Song]) -> Self:
-        uris = []
-        for song in playlist:
-            uris.append(song.uri)
 
+    def _handle_chunk(self, uris:list, position:int) -> Union[Success, ErrorMsg]:
         response = requests.post(
-            url = f'https://api.spotify.com/v1/playlists/{self.id}/tracks',
+            url = f'https://api.spotify.com/v1/playlists/{self.playlistId}/tracks',
             headers = {
                 'content-type': 'application/json',
                 'Authorization': f'Bearer {self.access_token}'
             },
             json = {
                 'uris': uris,
-                'position': 0
+                'position': position
             }
         )
-        
+
         if response.status_code == 201:
-            self.result = 'Success'
+            return Success()
         else:
-            self.errorMsg = ErrorMsg(f'response.status_code: {response.status_code}\n')
-            self.errorMsg.message += response.json().get('error').get('message')
+            return ErrorMsg(f'response.status_code: {response.status_code}\n{response.json().get('error').get('message')}')
+
+    def Handle(self, playlist: list[Song], position = 0) -> Self:
+        """
+        After Handle() is executed:\n
+        `self.result == (Success | PartialSuccess | None)`\n
+        `self.errorMsg set when self.result == (PartialSuccess | None)`
+        """
+        song_count = len(playlist)
+        
+        if song_count == 0:
+            self.errorMsg = ErrorMsg('playlist passed into SaveToPlaylistRequest.Handle() has no songs')
+            return
+        
+        CHUNK = 90
+        requests_complete = 0
+        total_requests_to_complete = (int)(song_count / CHUNK)
+        last_request_chunk = song_count % 90
+
+        for requests_complete in range(total_requests_to_complete):
+            lower_bound = requests_complete * CHUNK
+            upper_bound = lower_bound + CHUNK
+            uris = [song.uri for song in playlist[lower_bound:upper_bound]]
+            result = self._handle_chunk(uris, position + (CHUNK * requests_complete))
+
+            if type(result) is ErrorMsg:
+                self.errorMsg = result
+                if requests_complete > 0:
+                    self.result = PartialSuccess(f'Partial Success:\n{requests_complete * CHUNK} songs added to {self.playlist_name} [{self.playlistId}]') 
+                return self
+            
+            time.sleep(1)
+            
+        if last_request_chunk > 0:
+            lower_bound = song_count - last_request_chunk
+            uris = [song.uri for song in playlist[lower_bound:]]
+            result = self._handle_chunk(uris, lower_bound)
+
+            if type(result) is Success:
+                self.result = Success
+            elif type(result) is ErrorMsg:
+                self.result = PartialSuccess(f'Partial Success:\n{requests_complete * CHUNK} songs added to {self.playlist_name} [{self.playlistId}]')
+                self.errorMsg = result
 
         return self
     
-    def Result(self, print=False) -> Union[str, ErrorMsg]:
+    def Result(self, print=False) -> Union[Success, PartialSuccess, ErrorMsg]:
         if self.result:
+            success_type = type(self.result)
             if print:
-                print_green(f'SaveToPlaylistRequest Successful. PlaylistId: {self.id}')
+                if success_type is Success:
+                    print_green(f'SaveToPlaylistRequest Successful. {self.playlist_name} [{self.playlistId}]')
+                elif success_type is PartialSuccess:
+                    print_dark_yellow(self.result.description)
             return self.result
+        
         else:
             if print:
                 print_red('SaveToPlaylistRequest Failed:')

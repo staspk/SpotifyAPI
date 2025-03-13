@@ -6,17 +6,11 @@ class Success():
     pass
 
 class PartialSuccess():
-    description:str
-
-    def __init__(self, description:str = ""):
+    def __init__(self, description:str = ''):
         self.description = description
 
 class ErrorMsg():
-    message: str
-
     def __init__(self, message: str):
-        if message is None:
-            raise ValueError('message cannot be none in ErrorMsg init')
         self.message = message
     
     def __str__(self):
@@ -24,8 +18,9 @@ class ErrorMsg():
 
 
 class IHandleRequest(ABC):
-    result: any = None
-    errorMsg: ErrorMsg = None
+    def __init__(self):
+        self.result: any = None
+        self.errorMsg: ErrorMsg = None
 
     @abstractmethod
     def Handle() -> Self:
