@@ -85,6 +85,8 @@ class SimpleRequests:
 
 class CreatePlaylistRequest(IHandleRequest):
 
+    id: PlaylistId = None
+
     def __init__(self, user_id:str, access_token:str, playlist_name = 'Playlist1', public = True, description = ''):
         self.user_id = user_id
         self.access_token = access_token
@@ -110,7 +112,6 @@ class CreatePlaylistRequest(IHandleRequest):
         if response.status_code == 201:
             data = response.json()
             self.id = PlaylistId(data.get('id'))
-            self.result = self.id.__str__
         else:
             self.errorMsg = f'response.status_code: {response.status_code}\n'
             self.errorMsg += f'{response.json().get('error').get('message')}'
@@ -118,10 +119,10 @@ class CreatePlaylistRequest(IHandleRequest):
         return self
 
     def Result(self, print=False) -> Union[PlaylistId, ErrorMsg]:
-        if self.result is not None:
+        if self.id is not None:
             if print:
                 print_green(f'CreatePlaylistRequest Executed Successfully. PlaylistId: {self.id}')
-            return self.result
+            return self.id
         else:
             if print:
                 print_red('CreatePlaylistRequest Failure:')
@@ -139,7 +140,7 @@ class SaveToPlaylistRequest(IHandleRequest):
     - Result()
     """
 
-    Id: PlaylistId = None
+    id: PlaylistId = None
 
     @staticmethod
     def New_Playlist(user_id:str, access_token:str, playlist_name:str, description = '') -> "SaveToPlaylistRequest":
@@ -148,21 +149,21 @@ class SaveToPlaylistRequest(IHandleRequest):
             raise RuntimeError(f'Cannot continue due to error:\n{result}')
         if isinstance(result, PlaylistId):
             request = SaveToPlaylistRequest()
-            request.Id = result
+            request.id = result
             request.user_id = user_id
             request.access_token = access_token
             return request
 
     @staticmethod
-    def Existing_Playlist(Id:Union[str, PlaylistId], access_token) -> "SaveToPlaylistRequest":
-        if not isinstance(Id, str) and not isinstance(Id, PlaylistId):
+    def Existing_Playlist(id:Union[str, PlaylistId], access_token) -> "SaveToPlaylistRequest":
+        if not isinstance(id, str) and not isinstance(id, PlaylistId):
             raise AssertionError('Exising_Playlist Id enforced type: str | PlaylistId')
         
-        if isinstance(Id, str):
-            Id = PlaylistId(Id)
+        if isinstance(id, str):
+            id = PlaylistId(Id)
 
         response = requests.get(                                            # Checking if playlist exists / access_token is legal
-            url=f'https://api.spotify.com/v1/playlists/{Id}',
+            url=f'https://api.spotify.com/v1/playlists/{id}',
             headers = { 'Authorization': f'Bearer {access_token}' }
         )
 
@@ -170,7 +171,7 @@ class SaveToPlaylistRequest(IHandleRequest):
             raise RuntimeError('Playlist not found')
         else:
             request = SaveToPlaylistRequest()
-            request.Id = Id
+            request.id = id
             request.access_token = access_token
             return request
 
@@ -181,7 +182,7 @@ class SaveToPlaylistRequest(IHandleRequest):
         uris = uris[:-2]
 
         response = requests.post(
-            url = f'https://api.spotify.com/v1/playlists/{self.Id}/tracks',
+            url = f'https://api.spotify.com/v1/playlists/{self.id}/tracks',
             headers = {
                 'content-type': 'application/json',
                 'Authorization': f'Bearer {self.access_token}'
@@ -205,10 +206,10 @@ class SaveToPlaylistRequest(IHandleRequest):
     def Result(self, print=False) -> Union[str, ErrorMsg]:
         if self.result is not None:
             if print:
-                print_green(f'SaveToPlaylistRequest Successful. PlaylistId: {self.Id}')
+                print_green(f'SaveToPlaylistRequest Successful. PlaylistId: {self.id}')
             return self.result
         else:
             if print:
                 print_red('SaveToPlaylistRequest Failed.')
-                print_red(self.errorMsg)
+                print_red(self.errorMsg.__str__())
             return self.errorMsg

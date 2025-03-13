@@ -26,31 +26,13 @@ if __name__ == '__main__':
     luna_songs = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}\Luna').getSortedSongStreamingHistory(300)
     print(len(luna_songs))
 
-    print(luna_songs[2])
-
     # SimpleRequests.get_playlist('7LmSTLoNwrzgTmBbMML9EV', access_token)
     # SimpleRequests.get_user_playlists(access_token)
 
 
-    request = CreatePlaylistRequest('staspk', 'dfghjk', 'TestPlaylist')
 
-    if(not request.result):
-        print_green('request.result is falsy')
-
-    request.Handle().Result(True)
-
-    print()
-
-    if(not request.result):
-        print_green('request.result is still falsy')
-
-    if(request.errorMsg):
-        print_cyan('request.errorMsg is truthy')
-
-    pass
-
-    # SaveToPlaylistRequest.New_Playlist('staspk', access_token, "Lune's Favorites").Handle(luna_songs)
-    # SaveToPlaylistRequest.Existing_Playlist(PlaylistId('7LmSTLoNwrzgTmBbMML9EV'), access_token).Handle(luna_songs).Result(print)
+    SaveToPlaylistRequest.New_Playlist('staspk', access_token, "Luna's Favorites").Handle(luna_songs).Result(True)
+    # SaveToPlaylistRequest.Existing_Playlist(PlaylistId('7LmSTLoNwrzgTmBbMML9EV'), access_token).Handle(luna_songs).Result()
 
 
 

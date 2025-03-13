@@ -2,12 +2,12 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class PlaylistId():
-    Id:str
+    id:str
     
-    def __init__(self, Id:str):
-        if Id is None:
+    def __init__(self, id:str):
+        if id is None:
             raise ValueError('Id cannot be None')
-        object.__setattr__(self, 'Id', Id)
+        object.__setattr__(self, 'id', id)
 
     def __str__(self):
-        return self.Id
+        return self.id
