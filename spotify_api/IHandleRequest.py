@@ -11,7 +11,7 @@ class ErrorMsg():
         self.message = message
     
     def __str__(self):
-        self.message
+        return self.message
 
 
 class IHandleRequest(ABC):

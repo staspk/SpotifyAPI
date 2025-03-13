@@ -178,7 +178,7 @@ class SaveToPlaylistRequest(IHandleRequest):
     def Handle(self, playlist: list[Song]) -> Self:
         uris = ''
         for song in playlist:
-            uris += f'{song.uri} ,'
+            uris += f'{song.uri}, '
         uris = uris[:-2]
 
         response = requests.post(
@@ -204,12 +204,12 @@ class SaveToPlaylistRequest(IHandleRequest):
         
     
     def Result(self, print=False) -> Union[str, ErrorMsg]:
-        if self.result is not None:
+        if self.result:
             if print:
                 print_green(f'SaveToPlaylistRequest Successful. PlaylistId: {self.id}')
             return self.result
         else:
             if print:
-                print_red('SaveToPlaylistRequest Failed.')
-                print_red(self.errorMsg.__str__())
+                print_red('SaveToPlaylistRequest Failed:')
+                print_red(self.errorMsg)
             return self.errorMsg
