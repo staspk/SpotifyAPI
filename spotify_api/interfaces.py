@@ -2,6 +2,15 @@ from abc import ABC, abstractmethod
 from typing import Self, Union
 
 
+class Success():
+    pass
+
+class PartialSuccess():
+    description:str
+
+    def __init__(self, description:str = ""):
+        self.description = description
+
 class ErrorMsg():
     message: str
 
