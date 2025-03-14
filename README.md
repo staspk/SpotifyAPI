@@ -4,7 +4,7 @@
 - Programatically create playlists
 
 ### Example Use
-Ever lose a song? Create a playlist of lost song candidates (lifetime_most_listened - liked_songs)
+Ever lose a beloved song? Create a playlist of lost song candidates (lifetime_most_listened - liked_songs)
 ```
 lost_song_candidates = SpotifyUser(PATH_TO_USER_DATA).getLostSongCandidates(min_mins_listened=60)
 
