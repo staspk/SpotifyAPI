@@ -3,18 +3,22 @@ from typing import Self, Union
 
 
 class Success():
-    pass
+    def __str__(self):
+        return 'Success'
 
 class PartialSuccess():
     def __init__(self, description:str = ''):
         self.description = description
+
+    def __str__(self):
+        return f'Partial Success: {self.description}'
 
 class ErrorMsg():
     def __init__(self, message: str):
         self.message = message
     
     def __str__(self):
-        return self.message
+        return f'ErrorMsg: {self.message}'
 
 
 class IHandleRequest(ABC):
