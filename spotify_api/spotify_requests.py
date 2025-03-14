@@ -54,37 +54,71 @@ class SimpleRequests:
             print_red(f'response.status_code: {response.status_code}')
             print_red(f'error message: {response.json().get('error').get('message')}')
     
-    def get_user_playlists(access_token:str):
+    def get_user_playlists(access_token:str) -> Union[list, ErrorMsg]:
         """
         https://developer.spotify.com/documentation/web-api/reference/get-a-list-of-current-users-playlists
         """
 
-        endpoint = 'https://api.spotify.com/v1/me/playlists'
-
-        headers = {
-            'Authorization': f'Bearer {access_token}'
-        }
-
-        response = requests.get(url=endpoint, headers=headers)
+        response = requests.get(
+            url='https://api.spotify.com/v1/me/playlists?limit=50',
+            headers = {
+                'Authorization': f'Bearer {access_token}'
+            }
+        )
 
         if response.status_code == 200:
-            data = response.json()
-            print(json.dumps(data, indent=4))
+            return response.json()['items']
         else:
-            print_red(f'response.status_code: {response.status_code}')
-            print_red(f'error message: {response.json().get('error').get('message')}')
+            return ErrorMsg(f'response.status_code: {response.status_code}\nerror message: {response.json().get('error').get('message')}')
 
+    def create_playlist(access_token:str, user_id:str, playlist_name:str, public:bool = True, description:str = '') -> Union[PlaylistId, ErrorMsg]:
+        response = requests.post(
+            url = f'https://api.spotify.com/v1/users/{user_id}/playlists',
+            headers = {
+                'content-type': 'application/json',
+                'Authorization': f'Bearer {access_token}'
+            },
+            json = {
+                'name': playlist_name,
+                'description': description,
+                'public': public
+            }
+        )
+
+        if response.status_code == 201:
+            playlist_id:str = response.json().get('id')
+            print(f'Playlist successfully created. Name: {playlist_name}. Id: {playlist_id}')
+            return playlist_id
+        else:
+            return ErrorMsg(f'response.status_code: {response.status_code}\n{response.json().get('error').get('message')}')
+
+    def find_playlist(access_token:str, identifier:str) -> Union[tuple, None]:
+        """
+        identifier is either:
+        - name of playlist
+        - playlistId
+        """
+        response = SimpleRequests.get_user_playlists(access_token)
+
+        if type(identifier) is PlaylistId:
+            identifier = identifier.id
+
+        if type(response) is list:
+            for playlist in response:
+                if playlist['name'] == identifier or playlist['id'] == identifier:
+                    return playlist
+        return None
 
 class CreatePlaylistRequest(IHandleRequest):
     """
     See: https://developer.spotify.com/documentation/web-api/reference/create-playlist
     """
     
-    def __init__(self, user_id:str, access_token:str, playlist_name = 'Playlist1', public = True, description = ''):
+    def __init__(self, access_token:str, user_id:str, playlist_name = 'Playlist1', public = True, description = ''):
         super().__init__()
         self.id: PlaylistId = None
-        self.user_id = user_id
         self.access_token = access_token
+        self.user_id = user_id
         self.playlist_name = playlist_name
         self.description = description
         self.public = public
@@ -142,39 +176,33 @@ class SaveToPlaylistRequest(IHandleRequest):
     """
  
     @staticmethod
-    def New_Playlist(user_id:str, access_token:str, playlist_name:str, description = '') -> "SaveToPlaylistRequest":
-        result = CreatePlaylistRequest(user_id, access_token, playlist_name, True, description).Handle().Result()
+    def New_Playlist(access_token:str, user_id:str, playlist_name:str, description = '') -> "SaveToPlaylistRequest":
+        result = CreatePlaylistRequest(access_token, user_id, playlist_name, True, description).Handle().Result()
         if type(result) is PlaylistId:
             request = SaveToPlaylistRequest()
             request.playlistId = result
-            request.user_id = user_id
             request.access_token = access_token
+            request.user_id = user_id
             request.playlist_name = playlist_name
             return request
         else:
             raise RuntimeError(f'Cannot continue due to error:\n{result.message}')
 
     @staticmethod
-    def Existing_Playlist(id:Union[str, PlaylistId], access_token) -> "SaveToPlaylistRequest":
-        if not isinstance(id, str) and not isinstance(id, PlaylistId):
-            raise AssertionError('Exising_Playlist Id enforced type: str | PlaylistId')
-        
-        if isinstance(id, str):
-            id = PlaylistId(id)
+    def Existing_Playlist(access_token, identifier:Union[str, PlaylistId]) -> "SaveToPlaylistRequest":
+        if type(identifier) not in (str, PlaylistId):
+            raise RuntimeError('SaveToPlaylistRequest.Exising_Playlist(): identifier must be of type == (str | PlaylistId)')
 
-        response = requests.get(                                            # Checking if playlist exists / access_token is legal
-            url=f'https://api.spotify.com/v1/playlists/{id}',
-            headers = { 'Authorization': f'Bearer {access_token}' }
-        )
+        playlist = SimpleRequests.find_playlist(access_token, str(identifier))
 
-        if response.status_code != 200:
-            raise RuntimeError('Playlist not found')
-        else:
-            request = SaveToPlaylistRequest()
-            request.playlistId = id
-            request.access_token = access_token
-            return request
+        if playlist is None:
+            raise RuntimeError(f'Playlist not found. {str(identifier)}')
 
+        request = SaveToPlaylistRequest()
+        request.access_token = access_token
+        request.playlistId = PlaylistId(playlist['id'])
+        request.playlist_name = playlist['name']
+        return request
 
     def _handle_chunk(self, uris:list, position:int) -> Union[Success, ErrorMsg]:
         response = requests.post(
@@ -231,7 +259,7 @@ class SaveToPlaylistRequest(IHandleRequest):
             result = self._handle_chunk(uris, lower_bound)
 
             if type(result) is Success:
-                self.result = Success
+                self.result = Success()
             elif type(result) is ErrorMsg:
                 self.result = PartialSuccess(f'Partial Success:\n{requests_complete * CHUNK} songs added to {self.playlist_name} [{self.playlistId}]')
                 self.errorMsg = result
@@ -243,11 +271,10 @@ class SaveToPlaylistRequest(IHandleRequest):
             success_type = type(self.result)
             if print:
                 if success_type is Success:
-                    print_green(f'SaveToPlaylistRequest Successful. {self.playlist_name} [{self.playlistId}]')
+                    print_green(f'SaveToPlaylistRequest successful on: {self.playlist_name} [{self.playlistId}]')
                 elif success_type is PartialSuccess:
-                    print_dark_yellow(self.result.description)
+                    print_dark_yellow(f'SaveToPlaylistRequest only partially successful.\n{self.result.description}')
             return self.result
-        
         else:
             if print:
                 print_red('SaveToPlaylistRequest Failed:')
