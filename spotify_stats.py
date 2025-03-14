@@ -148,11 +148,18 @@ class SpotifyUser:
 
         return shared_songs
 
-    def getLostSongCandidates(self, minsCutoff=10) -> list:
+    def getLostSongCandidates(self, min_mins_listened=20) -> list[Song]:
+        """
+        Required:\n
+        - Spotify Account Data
+        - Extended Streaming History
+
+        Will get a list of your most listened songs that exceed min_mins_listened, subtract your Liked Songs from it, and return That
+        """
         if len(self.songs_streamed) == 0:
             raise AssertionError('Can only call SpotifyUser.getLostSongCandidates() if Spotify has been fed the "Spotify Extended Streaming History" json data.')
         
-        msCutoff = (minsCutoff * 60 * 1000)
+        msCutoff = (min_mins_listened * 60 * 1000)
         songsStreamedCopy = {}
 
         for song in self.songs_streamed.values():
