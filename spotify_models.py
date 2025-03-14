@@ -73,6 +73,9 @@ class Song(ISong, IStreamed):
         if record.get('reason_end') == 'trackdone':
             self.amount_listened = 1
 
+    def __eq__(self, other):
+        return ISong.__eq__(self, other)
+
     def __repr__(self):
         return f'Song:{self.title}:{self.artist}'
        
