@@ -4,15 +4,15 @@
 - Programatically create playlists
 
 ### Example Use
-	Ever lose a song? 
+Ever lose a song? Create a playlist of lost song candidates (lifetime_most_listened - liked_songs)
 ```
 lost_song_candidates = SpotifyUser(PATH_TO_USER_DATA).getLostSongCandidates(min_mins_listened=60)
 
 SaveToPlaylistRequest.New_Playlist(
-	access_token,
-	'staspk',
-	"Bronze - Duplicate",
-	'For deleting songs'
+  access_token,
+  user_name,
+  playlist_name,
+  description
 ).Handle(lost_song_candidates).Result(True)
 ```
 
