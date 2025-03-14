@@ -5,6 +5,7 @@ class Env:
     loaded = False
     vars = {}
 
+    @staticmethod
     def load(path_to_env_file = ENV, key_to_delete:str = None):
         if Env.loaded is False or key_to_delete:
             with open(path_to_env_file, 'r') as file:
@@ -16,6 +17,7 @@ class Env:
             Env._overwrite_env_file_with_vars(path_to_env_file)
         Env.loaded = True
 
+    @staticmethod
     def save(key:str, value:str, path_to_env_file = ENV):
         if Env.loaded is False:
             Env.load(path_to_env_file)
@@ -24,9 +26,11 @@ class Env:
             Env.vars[key] = value
             Env._overwrite_env_file_with_vars(path_to_env_file)
         
+    @staticmethod
     def delete(key:str):
         Env.load(ENV, key_to_delete=key)
 
+    @staticmethod
     def _overwrite_env_file_with_vars(path_to_env_file = ENV):
         with open(path_to_env_file, 'w') as file:
             for key, value in Env.vars.items():
