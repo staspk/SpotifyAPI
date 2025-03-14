@@ -3,7 +3,7 @@ import os, json
 from datetime import datetime
 from typing import Self
 from kozubenko.utils import print_green
-from spotify_models import IStreamed, Song, LikedSong, Podcast
+from spotify_models import ISong, IStreamed, Song, LikedSong, Podcast
 
 @dataclass()
 class SpotifyUser:
@@ -134,17 +134,25 @@ class SpotifyUser:
     def getLikedSongs(self) -> list:
         return SpotifyUser.songs_liked
 
-    def compareStreamedSongs(self, other:Self) -> list[tuple[Song, Song]]:
+    def compareStreamedSongs(self, other:Self, min_mins_cutoff = 20) -> list[tuple[Song, Song]]:
         if not isinstance(other, SpotifyUser):
             return AssertionError('other must be an instance of SpotifyUser')
         
-        keys1 = self.songs_streamed.keys()
-        keys2 = other.songs_streamed.keys()
+        MS_CUTOFF = (min_mins_cutoff * 60 * 1000)
+        
+        my_list = [song for song in self.songs_streamed.values() if song.total_ms_played > MS_CUTOFF]
+        other_list = [song for song in other.songs_streamed.values() if song.total_ms_played > MS_CUTOFF]
+
+
+        
+        list1 = self.getSortedSongStreamingHistory(min_mins_cutoff)
+        list2 = other.getSortedSongStreamingHistory(min_mins_cutoff)
         shared_songs: list[tuple[Song, Song]] = []
         
-        for key in keys1:
-            if keys2.__contains__(key):
-                shared_songs.append(self.songs_streamed[key], other.songs_streamed[key])
+        for song1 in list1:
+            for i in range(len(list2)):
+                if song1 == list2[i]:
+                    shared_songs.append((song1, list2[i]))
 
         return shared_songs
 
