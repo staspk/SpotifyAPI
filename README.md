@@ -1,7 +1,7 @@
 ## SpotifyAPI
 - See your all-time favorites
 - Generate lost song candidates
-- Programatically create playlists
+- Programmatically create playlists
 
 ### Example Use
 Ever lose a beloved song? Create a Spotify playlist of lost song candidates (lifetime_most_listened - liked_songs):
