@@ -1,21 +1,21 @@
-from dataclasses import dataclass
 import os, json
 from datetime import datetime
 from typing import Self
-from kozubenko.utils import print_green
-from spotify_models import ISong, IStreamed, Song, LikedSong, Podcast
+from kozubenko.print import print_green
+from spotify_py.spotify_models import IStreamed, Song, LikedSong, Podcast
+from definitions import SPOTIFY_USER_DATA_DIR
 
-@dataclass()
+
 class SpotifyUser:
     """
-    init with spotify_data_dir => a path directory named after username/name of data owner. Possible folders inside:
+    Use `py ./import_spotify_data.py {name}` to import `*.zip` Spotify Data, categorized by `name` of data owner. Data types Spotify offers:
     - Spotify Account Data
     - Spotify Extended Streaming History
     - Spotify Technical Log Information
 
-    ***For best results, use import_spotify_data.py to import my_spotify_data.zip to preserve correct folder hierarchy***
+    ***Instantiate `SpotifyUser` with same `name` to manipulate/transform above data to find statistical insights.***
     """
-    def __init__(self, spotify_data_dir):
+    def __init__(self, name:str):
         self.user_name = os.path.basename(spotify_data_dir)
         
         self.streaming_history_files:list = []
@@ -98,7 +98,6 @@ class SpotifyUser:
                     numOfDuplicates = self.songs_duplicates.pop(repr(song), 0)
                     self.songs_duplicates[repr(song)] = (numOfDuplicates + 1)
 
-    @staticmethod 
     def _getSortedList(dictInQuestion, minsCutoff) -> list:
         toReturnList = []
         msCutoff = (minsCutoff * 60 * 1000)
@@ -132,7 +131,11 @@ class SpotifyUser:
         print(f'Total: {len(SpotifyUser.songs_liked)}')
 
     def getLikedSongs(self) -> list:
-        return SpotifyUser.songs_liked
+        liked_songs_list = list(self.songs_liked.values())
+
+        # liked_songs_list = [ISong(value) for value in self.songs_liked.values()]
+
+        return liked_songs_list
 
     def compareStreamedSongs(self, other:Self, min_mins_cutoff = 20) -> list[tuple[Song, Song]]:
         if not isinstance(other, SpotifyUser):
@@ -196,6 +199,4 @@ class SpotifyUser:
             for item in list:
                 file.write(str(item))
                 file.write('\n\n')
-
-
 

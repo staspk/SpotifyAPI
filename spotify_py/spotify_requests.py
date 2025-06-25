@@ -1,10 +1,10 @@
 import json, time, requests
 from typing import Self, Union
 from kozubenko.env import Env
-from kozubenko.utils import *
-from spotify_api.interfaces import *
-from spotify_api.models import PlaylistId
-from spotify_models import Song
+from kozubenko.print import *
+from spotify_py.interfaces import *
+from spotify_py.models import PlaylistId
+from spotify_py.spotify_models import Song
 
     
 
@@ -176,7 +176,12 @@ class SaveToPlaylistRequest(IHandleRequest):
     """
  
     @staticmethod
-    def New_Playlist(access_token:str, user_id:str, playlist_name:str, description = '') -> "SaveToPlaylistRequest":
+    def New_Playlist(
+        access_token:str,
+        user_id:str,
+        playlist_name:str,
+        description = ''
+    ) -> "SaveToPlaylistRequest":
         result = CreatePlaylistRequest(access_token, user_id, playlist_name, True, description).Handle().Result()
         if type(result) is PlaylistId:
             request = SaveToPlaylistRequest()

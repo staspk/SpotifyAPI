@@ -1,7 +1,7 @@
-import auth_server
-from kozubenko.utils import *
-from spotify_api.spotify_requests import *
-from spotify_stats import SpotifyUser
+import spotify_py.auth_server as auth_server
+from kozubenko.print import print_cyan
+from spotify_py.spotify_requests import *
+from spotify_py.spotify_stats import SpotifyUser
 from kozubenko.env import Env
 
 from definitions import SPOTIFY_USER_DATA_DIR

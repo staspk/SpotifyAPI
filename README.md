@@ -16,18 +16,24 @@ SaveToPlaylistRequest.New_Playlist(
 ).Handle(lost_song_candidates).Result(True)
 ```
 
-### Get your Lifetime Listening Data
-- https://www.spotify.com/us/account/privacy/ - My Direct Link
-- https://www.spotify.com/account
-	- Click on: 'Account Privacy'
-	- Scroll down to section: 'Download your data'. Your Choices:
-		- Account Data:  				wait time: ~several days
-		- Extended Streaming History:  	wait time: ~week
-		- Technical Log:				wait time: ~2-4 weeks
-	- Do not forget to respond to your confirmation link.
-
-### Steps
-- Register your app on [Developer Dashboard](https://developer.spotify.com/dashboard)
-- Call `auth_server.print_help()` in main.py for example .env file
-- Run import_spotify_data.py
-- See enclosed main.py
+### Steps to run above code: 
+- Spotify Data, where:
+  	- https://www.spotify.com/us/account/privacy/ - USA Accounts Direct Link
+  	- https://www.spotify.com/account - Scroll down, click on 'Account Privacy', otherwise.
+- Spotify Data, types:
+	- **Account Data**:  				wait time: ~several days. ***[REQUIRED]***
+	- **Extended Streaming History**:  	wait time: <=week.         ***[REQUIRED]***
+	- Technical Log:				wait time: ~2-4 weeks
+- `py ./import_spotify_data.py {name}`
+    - `name`: owner of the Spotify Data. separate `*.zips` will be categorized under this name
+    - find a Spotify Data `*.zip` file through the File Chooser
+ - **Generate Secrets**
+ 	- Register your app on [Developer Dashboard](https://developer.spotify.com/dashboard)
+    	- *Redirect URI*: *`http://127.0.0.1:8080/callback`*
+  	- In project directory, create `./.env/.env`:
+	    ```
+		client_id={Client ID}
+		client_secret={Client secret}
+		scope=playlist-read-private playlist-read-collaborative user-library-read user-library-modify playlist-modify-public user-top-read
+		redirect_uri=http://127.0.0.1:8080/callback
+	    ```

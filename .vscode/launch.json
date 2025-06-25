@@ -3,10 +3,11 @@
         {
             "name": "Python: Debug main.py",
             "type": "debugpy",
-            "python": "C:/Users/stasp/Desktop/Spotify-History/.venv/Scripts/python.exe",
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe",
             "request": "launch",
-            "program": "${workspaceFolder}\\main.py",
-            "justMyCode": false
+            "program": "${workspaceFolder}\\import_spotify_data.py",
+            "args": ["Stan"],
+            "justMyCode": true
         }
     ]
 }
