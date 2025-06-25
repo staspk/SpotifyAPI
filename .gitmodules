@@ -1,3 +1,4 @@
 [submodule "kozubenko"]
 	path = kozubenko
 	url = https://github.com/staspk/python.git
+	branch = main
