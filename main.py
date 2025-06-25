@@ -1,11 +1,32 @@
-import auth_server
-from kozubenko.utils import *
-from spotify_api.spotify_requests import *
-from spotify_stats import SpotifyUser
+import os
+import spotify_py.auth_server as auth_server
+from kozubenko.print import *
+from spotify_py.spotify_requests import *
+from spotify_py.spotify_stats import SpotifyUser
 from kozubenko.env import Env
 
-from definitions import SPOTIFY_USER_DATA_DIR
 
+
+
+NAME = 'Stan'
+
+lost_song_candidates = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}{os.path.sep}{NAME}').getLostSongCandidates(min_mins_listened=60)
+
+
+
+exit(0)
+
+
+lost_song_candidates = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}{os.path.sep}{NAME}').getLostSongCandidates(min_mins_listened=60)
+
+SaveToPlaylistRequest.New_Playlist(
+	access_token,
+	user_name,
+	playlist_name,
+	description
+).Handle(lost_song_candidates).Result(True)
+
+exit(0)
 
 if __name__ == '__main__':
     Env.load()

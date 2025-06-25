@@ -11,7 +11,8 @@ from flask import Flask, redirect, request, jsonify
 from werkzeug.serving import make_server
 
 from kozubenko.env import Env
-from kozubenko.utils import Utils, print_dark_gray, print_gray, print_green, print_yellow
+from kozubenko.print import print_dark_gray, print_gray, print_green, print_yellow
+from kozubenko.utils import Utils
 
 
 

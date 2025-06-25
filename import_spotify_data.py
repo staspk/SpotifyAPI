@@ -1,4 +1,14 @@
-import os, shutil
+"""
+`py ./import_spotify_data.py {name}`
+    `{name}:str` -> owner of the Spotify Data. Separate `*.zips` will be categorized under this name. See: `SpotifyUser`
+
+Spotify Data Types:
+    - Spotify Account Data
+    - Spotify Extended Streaming History
+    - Spotify Technical Log Information
+
+"""
+import os, argparse, shutil
 from datetime import datetime
 from pathlib import Path
 from tkinter import Tk, filedialog
@@ -8,6 +18,19 @@ from definitions import SPOTIFY_USER_DATA_DIR, SPOTIFY_USER_DATA_ARCHIVE_DIR
 from definitions import SPOTIFY_ACCOUNT_DATA, SPOTIFY_EXTENDED_STREAMING_HISTORY, SPOTIFY_TECHNICAL_LOG
 
 from zipfile import ZipFile, ZIP_DEFLATED
+
+from kozubenko.print import print_red
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('name', nargs='?', help='owner of the Spotify Data. Separate `*.zips` will be categorized under this name.')
+args = parser.parse_args()
+
+if not args.name:
+    print_red('import_spotify_data.py: name {arg1} is required. For details, run: `py import_spotify_data.py --help`')
+    exit(0)
+
+
 
 # dir_to_archive => full path of directory to archive; DATA_CATEGORY => See 'my_spotify_data.zip' Folder Names in definitions.py
 def archive(dir_to_archive:str, DATA_CATEGORY):
@@ -59,9 +82,7 @@ def save_user_data_to_project_files(name:str, path_to_zip: str):
 
     given_zip.close()
 
-def Import_Spotify_Data():
-    name = input('Username/data owner to save this data under?: ')
-
+def Import_Spotify_Data(name:str):
     root = Tk()
     root.attributes('-topmost',True, '-alpha',0)
 
@@ -69,4 +90,6 @@ def Import_Spotify_Data():
 
     save_user_data_to_project_files(name, path_to_zip)
 
-Import_Spotify_Data()
+
+
+Import_Spotify_Data(args.name)
