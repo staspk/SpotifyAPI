@@ -21,8 +21,8 @@ SaveToPlaylistRequest.New_Playlist(
   	- https://www.spotify.com/us/account/privacy/ - USA Accounts Direct Link
   	- https://www.spotify.com/account - Scroll down, click on 'Account Privacy', otherwise.
 - Spotify Data, types:
-	- Account Data:  				wait time: ~several days
-	- Extended Streaming History:  	wait time: ~week
+	- **Account Data**:  				wait time: ~several days. ***[REQUIRED]***
+	- **Extended Streaming History**:  	wait time: <=week.         ***[REQUIRED]***
 	- Technical Log:				wait time: ~2-4 weeks
 - `py ./import_spotify_data.py {name}`
     - `name`: owner of the Spotify Data. separate `*.zips` will be categorized under this name
@@ -30,7 +30,7 @@ SaveToPlaylistRequest.New_Playlist(
  - **Generate Secrets**
  	- Register your app on [Developer Dashboard](https://developer.spotify.com/dashboard)
     	- *Redirect URI*: *`http://127.0.0.1:8080/callback`*
-  	- From project dir, create `./.env/.env`:
+  	- In project directory, create `./.env/.env`:
 	    ```
 		client_id={Client ID}
 		client_secret={Client secret}
