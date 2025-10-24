@@ -2,9 +2,9 @@ import json, time, requests
 from typing import Self, Union
 from kozubenko.env import Env
 from kozubenko.print import *
+from .ISong import ISong
 from spotify_py.interfaces import *
 from spotify_py.models import PlaylistId
-from spotify_py.spotify_models import Song
 
     
 
@@ -227,7 +227,7 @@ class SaveToPlaylistRequest(IHandleRequest):
         else:
             return ErrorMsg(f'response.status_code: {response.status_code}\n{response.json().get('error').get('message')}')
 
-    def Handle(self, playlist: list[Song], position = 0) -> Self:
+    def Handle(self, playlist: list[ISong], position = 0) -> Self:
         """
         After Handle() is executed:\n
         `self.result == (Success | PartialSuccess | None)`\n
