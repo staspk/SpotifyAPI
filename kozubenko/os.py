@@ -1,6 +1,46 @@
 import os
 
 
+class Path(str):
+    def __new__(cls, path, *paths:str):
+        return super(Path, cls).__new__(cls, os.path.join(path, *paths))
+
+class File(Path):
+    @staticmethod
+    def exists(path:str, *paths:str) -> str|bool:
+        """
+        Returns the `path`, or `False`
+        """
+        file = os.path.join(path, *paths)
+        if(os.path.isfile(file)):
+            return file
+        return False
+    
+class Directory(Path):
+    @staticmethod
+    def exists(path:str, *paths:str) -> str|bool:
+        """
+        Returns the `path`, or `False`
+        """
+        dir = os.path.join(path, *paths)
+        if(os.path.isdir(dir)):
+            return dir
+        return False
+    
+    @staticmethod
+    def files(path:str, str:str) -> list[str]:
+        """
+        Returns a `List` of absolute paths of files at `path` with `str in filename`
+
+        **Example:**
+        >>>  if(files := Directory.files(EXTENDED_STREAMING_HISTORY, 'Streaming_History_Audio')):
+        """
+        files:list[File] = []
+        for file in os.listdir(path):
+            if str in file:
+                files.append(File(os.path.join(path, file)))
+        return files
+
 def Downloads_Directory() -> str:
     r"""
     - **Windows:** returns downloads value under: `Registry:SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`\n

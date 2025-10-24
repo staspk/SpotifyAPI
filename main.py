@@ -1,23 +1,27 @@
-import os
+
 import spotify_py.auth_server as auth_server
 from kozubenko.print import *
 from spotify_py.spotify_requests import *
-from spotify_py.spotify_stats import SpotifyUser
+from kozubenko.print import print_red
+from spotify_py.SpotifyUser import SpotifyUser
 from kozubenko.env import Env
 
+from definitions import SPOTIFY_USER_DATA_DIR
 
 
+STAN = 'Stan'
+LUNA = 'Luna'
 
-NAME = 'Stan'
+SpotifyUser(STAN)
+# SpotifyUser(LUNA)
 
-lost_song_candidates = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}{os.path.sep}{NAME}').getLostSongCandidates(min_mins_listened=60)
 
-
+# .getLostSongCandidates(min_mins_listened=60)
 
 exit(0)
 
-
-lost_song_candidates = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}{os.path.sep}{NAME}').getLostSongCandidates(min_mins_listened=60)
+NAME = 'Stan'
+# lost_song_candidates = SpotifyUser(fr'{SPOTIFY_USER_DATA_DIR}{os.path.sep}{NAME}').getLostSongCandidates(min_mins_listened=60)
 
 SaveToPlaylistRequest.New_Playlist(
 	access_token,
