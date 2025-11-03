@@ -1,11 +1,20 @@
 {
+    "version": "0.2.0",
     "configurations": [
         {
             "name": "Python: Debug main.py",
             "type": "debugpy",
             "python": "${workspaceFolder}/.venv/Scripts/python.exe",
             "request": "launch",
-            "program": "${workspaceFolder}\\import_spotify_data.py",
+            "program": "${workspaceFolder}/main.py",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Import Spotify Data",
+            "type": "debugpy",
+            "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+            "request": "launch",
+            "program": "${workspaceFolder}/import_spotify_data.py",
             "args": ["Stan"],
             "justMyCode": true
         }

@@ -3,13 +3,12 @@ from dataclasses import dataclass
 from kozubenko.print import print_green
 from kozubenko.utils import Json
 from .IStreamed import *
-# from .IStreamed import IStreamed, StreamedSong, Podcast, AudioBook, Unidentified
 
 
 @dataclass
 class AudioStreamingHistory():
     """
-    Analyzes `lifetime listening record` (see: `IStreamed`) to generate lists of `songs`, `podcasts`, `audiobooks`, sorted by `total_ms_played`.  
+    Analyzes `lifetime listening record` (see: `IStreamed`) to generate lists of `songs`, `podcasts`, `audiobooks`, sorted by `total_ms_played`.
     """
     songs:   list[StreamedSong]
     podcasts: list[Podcast]
@@ -18,8 +17,15 @@ class AudioStreamingHistory():
     total_records: int
     unexpected_records: list[Unidentified]
 
+    name: str
+
     @staticmethod
-    def From(json_files:list[str]) -> AudioStreamingHistory:
+    def From(name:str, json_files:list[str]) -> AudioStreamingHistory:
+        """
+        Pass in List of jsons with *`"Streaming_History_Audio"`* in their filename.  
+        
+        e.g: `Streaming_History_Audio_2018_1.json`
+        """
         songs_streamed:      dict[str, StreamedSong] = {}
         podcasts_streamed:   dict[str, Podcast]      = {}
         audiobooks_streamed: dict[str, AudioBook]    = {}
@@ -56,11 +62,15 @@ class AudioStreamingHistory():
                     audio.read_cycle = iterations
                     unexpected.append(audio)
 
-        return AudioStreamingHistory(songs_streamed, sorted(podcasts_streamed.values()), sorted(audiobooks_streamed.values()), iterations, unexpected)
-        return AudioStreamingHistory(sorted(songs_streamed.values()), sorted(podcasts_streamed.values()), sorted(audiobooks_streamed.values()), iterations, unexpected)
+        return AudioStreamingHistory(
+            sorted(songs_streamed.values()), sorted(podcasts_streamed.values()), sorted(audiobooks_streamed.values()),
+            iterations,
+            unexpected,
+            name
+        )
 
     def console_report(self):
-        print_green(f'AudioStreamingHistory.From(): iterated through {self.total_records} records. Unidentified: {len(self.unexpected_records)}')
+        print_green(f'{self.name}.history => iterated through {self.total_records} records. Unidentified: {len(self.unexpected_records)}')
         print_green(f'   Songs      : {self.songs.__len__()}')
         print_green(f'   Podcasts   : {self.podcasts.__len__()}')
         print_green(f'   AudioBooks : {self.audiobooks.__len__()}')
