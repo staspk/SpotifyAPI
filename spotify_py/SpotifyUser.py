@@ -1,14 +1,12 @@
-from collections import namedtuple
+import os
 from dataclasses import dataclass
-import os, json
 from datetime import datetime
 from typing import Self
 from kozubenko.print import *
-from kozubenko.os import Directory, File
+from kozubenko.os import Directory, Path
 from kozubenko.utils import Json
-# from spotify_py.ISong import ISong
-from spotify_py.ISong import ISong
-from spotify_py.IStreamed import IStreamed, AudioBook, StreamedSong, Podcast
+from .ISong import ISong
+from spotify_py.IStreamed import StreamedSong
 from spotify_py.extended_streaming_history import AudioStreamingHistory
 from definitions import SPOTIFY_USER_DATA_DIR
 
@@ -20,7 +18,6 @@ class LikedSong(ISong):
     def __repr__(self):
         return f'LikedSong:{self.title}:{self.artist}'
     
-
 
 class SpotifyUser:
     """
@@ -38,8 +35,6 @@ class SpotifyUser:
         self.songs_liked:       dict[str, LikedSong]
         self.songs_duplicates:  dict[str, int]
 
-        history: AudioStreamingHistory = None
-
         # if(ACCOUNT_DATA := Directory.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Account Data')):
         #     if(file := File.exists(ACCOUNT_DATA, 'Userdata.json')):
         #         with open(file, 'r') as _json:
@@ -50,13 +45,13 @@ class SpotifyUser:
         #         (self.songs_liked, 
         #          self.songs_duplicates) = SpotifyUser.parseLikedSongs(_json)
 
-        if(dir := Directory.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Extended Streaming History')):
-            if(files := Directory.files(dir, 'Streaming_History_Audio')):
-                self.history = AudioStreamingHistory.From(files)
-                self.history.console_report()
-
-                songs = self.history.songs
-                # print_yellow(type(self.history.songs_streamed))
+        self.history = AudioStreamingHistory.From(
+            self.name,
+            Directory.files(
+                Directory(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Extended Streaming History'),
+                'Streaming_History_Audio'
+            )
+        )
 
         
     
