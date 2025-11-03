@@ -2,30 +2,42 @@ import os
 
 
 class Path(str):
+    """
+    Allows one to use `Path` constructor instead of `os.path.join`. Is a `str`, at it's core.
+
+    **Example:**
+        >>>  Path(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Extended Streaming History')
+    """
     def __new__(cls, path, *paths:str):
         return super(Path, cls).__new__(cls, os.path.join(path, *paths))
 
 class File(Path):
+    """
+    inherits `Path` -> allows you to use `File()` constructor instead of `os.path.join`. Is a `str`, at it's core.
+    """
     @staticmethod
-    def exists(path:str, *paths:str) -> str|bool:
+    def exists(path:str, *paths:str) -> str|None:
         """
         Returns the `path`, or `False`
         """
         file = os.path.join(path, *paths)
         if(os.path.isfile(file)):
             return file
-        return False
+        return None
     
 class Directory(Path):
+    """
+    inherits `Path` -> allows you to use `Directory()` constructor instead of `os.path.join`. Is a `str`, at it's core.
+    """
     @staticmethod
-    def exists(path:str, *paths:str) -> str|bool:
+    def exists(path:str, *paths:str) -> str|None:
         """
         Returns the `path`, or `False`
         """
         dir = os.path.join(path, *paths)
         if(os.path.isdir(dir)):
             return dir
-        return False
+        return None
     
     @staticmethod
     def files(path:str, str:str) -> list[str]:
@@ -36,14 +48,15 @@ class Directory(Path):
         >>>  if(files := Directory.files(EXTENDED_STREAMING_HISTORY, 'Streaming_History_Audio')):
         """
         files:list[File] = []
-        for file in os.listdir(path):
-            if str in file:
-                files.append(File(os.path.join(path, file)))
+        if(os.path.exists(path)):
+            for file in os.listdir(path):
+                if str in file:
+                    files.append(File(os.path.join(path, file)))
         return files
 
 def Downloads_Directory() -> str:
     r"""
-    - **Windows:** returns downloads value under: `Registry:SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`\n
+    - **Windows:** returns downloads value under: `Registry:SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`
     - **Mac/Linux:** returns `~/Downloads`
     """
     if os.name == 'nt':

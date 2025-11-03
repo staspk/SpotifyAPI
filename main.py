@@ -12,8 +12,11 @@ from definitions import SPOTIFY_USER_DATA_DIR
 STAN = 'Stan'
 LUNA = 'Luna'
 
-SpotifyUser(STAN)
-# SpotifyUser(LUNA)
+stan = SpotifyUser(STAN)
+stan.history.console_report()
+
+luna = SpotifyUser(LUNA)
+luna.history.console_report()
 
 
 # .getLostSongCandidates(min_mins_listened=60)
