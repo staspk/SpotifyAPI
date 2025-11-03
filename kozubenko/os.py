@@ -36,9 +36,10 @@ class Directory(Path):
         >>>  if(files := Directory.files(EXTENDED_STREAMING_HISTORY, 'Streaming_History_Audio')):
         """
         files:list[File] = []
-        for file in os.listdir(path):
-            if str in file:
-                files.append(File(os.path.join(path, file)))
+        if(os.path.exists(path)):
+            for file in os.listdir(path):
+                if str in file:
+                    files.append(File(os.path.join(path, file)))
         return files
 
 def Downloads_Directory() -> str:
