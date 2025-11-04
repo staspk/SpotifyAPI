@@ -5,9 +5,10 @@ from typing import Self
 from kozubenko.print import *
 from kozubenko.os import Directory
 from kozubenko.json import Json
+from .account_data import AccountData, ILikedSongs
 from .ISong import ISong
 from spotify_py.IStreamed import StreamedSong
-from spotify_py.extended_streaming_history import AudioStreamingHistory
+from spotify_py.extended_streaming_history import AudioStreamingHistory, ExtendedStreamingHistory
 from definitions import SPOTIFY_USER_DATA_DIR
 
 
@@ -30,45 +31,23 @@ class SpotifyUser:
     """
     def __init__(self, name:str):
         self.name = name
+
         self.account_creation_time:datetime = None
-
-        self.songs_liked:       dict[str, LikedSong]
-        self.songs_duplicates:  dict[str, int]
-
         if(data := Json.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Account Data', 'Userdata.json')):
             self.account_creation_time = datetime.strptime(data['creationTime'], "%Y-%m-%d")
 
-        #     if(_json := File.exists(ACCOUNT_DATA, 'YourLibrary.json')):
-        #         (self.songs_liked, 
-        #          self.songs_duplicates) = SpotifyUser.parseLikedSongs(_json)
+        self.liked:ILikedSongs
+        if(data := Json.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Account Data', 'YourLibrary.json')):
+            (self.songs_liked,
+             self.songs_duplicates) = AccountData.Parse(self.name, data)
 
-        self.history = AudioStreamingHistory.From(
+        self.history:AudioStreamingHistory = ExtendedStreamingHistory.Parse(
             self.name,
             Directory.files(
                 Directory(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Extended Streaming History'),
                 'Streaming_History_Audio'
             )
         )
-
-        
-    
-
-    @staticmethod
-    def parseLikedSongs(json:str):
-        songs_liked:       dict[str, LikedSong]
-        songs_duplicates:  dict[str, int]
-
-        for record in Json.load(json)['tracks']:
-            song = LikedSong(record['track'], record['artist'], record['album'], record['uri'])
-
-            fromLiked = songs_liked.get(repr(song), None)
-            if fromLiked is None:
-                songs_liked[repr(song)] = song
-            else:
-                numOfDuplicates = songs_duplicates.pop(repr(song), 0)
-                songs_duplicates[repr(song)] = (numOfDuplicates + 1)
-
-        return (songs_liked, songs_duplicates)
 
 
     def _getSortedList(dictInQuestion, minsCutoff) -> list:

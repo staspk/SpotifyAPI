@@ -4,13 +4,13 @@ from kozubenko.print import Print
 from kozubenko.json import Json
 from .IStreamed import *
 
-from .account_data import LikedSongs
-
 
 @dataclass
 class AudioStreamingHistory():
     """
-    Analyzes `lifetime listening record` (see: `IStreamed`) to generate lists of `songs`, `podcasts`, `audiobooks`, sorted by `total_ms_played`.
+    Analyzes lifetime listening record to find `songs`/`podcasts`/`audiobooks`, sorted by `total_ms_played`. Implementation details: `IStreamed.py`.
+
+    **Requires:** at least one `/Spotify User Data/{name}/Spotify Extended Streaming History/Streaming_History_Audio_***.json`
     """
     songs:   list[StreamedSong]
     podcasts: list[Podcast]
@@ -21,8 +21,21 @@ class AudioStreamingHistory():
 
     name: str
 
-    @staticmethod
-    def From(name:str, json_files:list[str]) -> AudioStreamingHistory:
+    def console_report(self):
+        Print.green(f'{self.name}.history => iterated through {self.total_records} records. Unidentified: {len(self.unexpected_records)}')
+        Print.green(f'   Songs      : {self.songs.__len__()}')
+        Print.green(f'   Podcasts   : {self.podcasts.__len__()}')
+        Print.green(f'   AudioBooks : {self.audiobooks.__len__()}')
+
+
+class ExtendedStreamingHistory():
+    """
+    **Requires:** `/Spotify User Data/{name}/Spotify Extended Streaming History`   
+    
+    ***See: `SpotifyUser.py` for import steps.***
+    """
+
+    def Parse(name:str, json_files:list[str]) -> AudioStreamingHistory:
         """
         Pass in List of jsons with *`"Streaming_History_Audio"`* in their filename.  
         
@@ -70,10 +83,3 @@ class AudioStreamingHistory():
             unexpected,
             name
         )
-
-    def console_report(self):
-        Print.green(f'{self.name}.history => iterated through {self.total_records} records. Unidentified: {len(self.unexpected_records)}')
-        Print.green(f'   Songs      : {self.songs.__len__()}')
-        Print.green(f'   Podcasts   : {self.podcasts.__len__()}')
-        Print.green(f'   AudioBooks : {self.audiobooks.__len__()}')
-
