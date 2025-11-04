@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Self
 from kozubenko.print import *
 from kozubenko.os import Directory
-from kozubenko.utils import Json
+from kozubenko.json import Json
 from .ISong import ISong
 from spotify_py.IStreamed import StreamedSong
 from spotify_py.extended_streaming_history import AudioStreamingHistory
@@ -58,7 +58,7 @@ class SpotifyUser:
         songs_liked:       dict[str, LikedSong]
         songs_duplicates:  dict[str, int]
 
-        for record in Json.from_file(json)['tracks']:
+        for record in Json.load(json)['tracks']:
             song = LikedSong(record['track'], record['artist'], record['album'], record['uri'])
 
             fromLiked = songs_liked.get(repr(song), None)

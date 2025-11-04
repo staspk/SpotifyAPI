@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from kozubenko.print import Print
-from kozubenko.utils import Json
+from kozubenko.json import Json
 from .IStreamed import *
 
 from .account_data import LikedSongs
