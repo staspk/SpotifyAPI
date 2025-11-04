@@ -6,7 +6,7 @@ from spotify_py.ISong import ISong
 @dataclass
 class Unidentified():
     """
-    A Json record with an unexpected shape found in `Spotify Extended Streaming History`
+    A Json record in a `Streaming_History_Audio_***.json` with an unexpected shape.
     """
     record:str             # the json record as a str
     file:str       = None  # absolute path of file where this record was found
@@ -16,7 +16,9 @@ class Unidentified():
 @dataclass()
 class IStreamed():
     """
-    A single record in the `Spotify Extended Streaming History`
+    A single record in a `Streaming_History_Audio_***.json`  
+
+    `IStreamed` objects can be combined to form totals over a time domain.
     """
     amount_played   = 1     # amount of records
     amount_listened = 0     # amount of finished listens
@@ -26,13 +28,12 @@ class IStreamed():
 
     @staticmethod
     def createFromJsonRecord(record:dict):
-        """  ***Static Constructor***  """
+        """ Static Constructor for `IStreamed` """
         if record['master_metadata_track_name'] : return StreamedSong(record)
         if record['episode_name']               : return Podcast(record)
         if record['audiobook_title']            : return AudioBook(record)
         else                                    : return Unidentified(record)
 
-    # @abstractmethod
     def combine(self, other):
         if isinstance(other, IStreamed):
             self.amount_played = (self.amount_played + other.amount_played)
@@ -66,6 +67,11 @@ class IStreamed():
 
 @dataclass()
 class StreamedSong(IStreamed, ISong):
+    """
+    An possible shape of a record in `Streaming_History_Audio_***.json`.
+
+    `spotify_track_uri` will not be null. example form: `spotify:track:4GnkzqMpGmJIGt8geJetwF`
+    """
     def __init__(self, record):
         ISong.__init__(self, title=record['master_metadata_track_name'], artist=record['master_metadata_album_artist_name'], album=record['master_metadata_album_album_name'])
         IStreamed.__init__(self, total_ms_played=record['ms_played'], ts=[record['ts']], uri=record['spotify_track_uri'])
