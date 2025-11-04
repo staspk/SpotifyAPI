@@ -1,0 +1,6 @@
+NOTE ON THIS DIRECTORY [Spotify User Data] => {
+	running: `py ./import_spotify_data.py {name}`
+	will create a folder: ./{name}
+	under which the various data types Spotify offers will be organized.
+	See SpotifyUser.py for further details
+}
