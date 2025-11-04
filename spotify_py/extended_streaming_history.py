@@ -36,7 +36,7 @@ class AudioStreamingHistory():
         unexpected: list[Unidentified] = []
 
         for json in json_files:
-            for record in Json.from_file(json):
+            for record in Json.load(json):
                 iterations += 1
                 audio = IStreamed.createFromJsonRecord(record)
                 representation = repr(audio)
