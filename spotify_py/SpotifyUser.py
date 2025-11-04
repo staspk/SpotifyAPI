@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Self
 from kozubenko.print import *
-from kozubenko.os import Directory, Path
+from kozubenko.os import Directory
 from kozubenko.utils import Json
 from .ISong import ISong
 from spotify_py.IStreamed import StreamedSong
@@ -30,16 +30,13 @@ class SpotifyUser:
     """
     def __init__(self, name:str):
         self.name = name
-        self.account_creation_time:datetime
+        self.account_creation_time:datetime = None
 
         self.songs_liked:       dict[str, LikedSong]
         self.songs_duplicates:  dict[str, int]
 
-        # if(ACCOUNT_DATA := Directory.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Account Data')):
-        #     if(file := File.exists(ACCOUNT_DATA, 'Userdata.json')):
-        #         with open(file, 'r') as _json:
-        #             data = json.load(_json)
-        #             self.account_creation_time = datetime.strptime(data['creationTime'], "%Y-%m-%d")
+        if(data := Json.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Account Data', 'Userdata.json')):
+            self.account_creation_time = datetime.strptime(data['creationTime'], "%Y-%m-%d")
 
         #     if(_json := File.exists(ACCOUNT_DATA, 'YourLibrary.json')):
         #         (self.songs_liked, 
