@@ -12,7 +12,7 @@ from werkzeug.serving import make_server
 
 from kozubenko.env import Env
 from kozubenko.print import Print
-from kozubenko.utils import Utils
+from kozubenko.OAuth2 import OAuth2
 
 
 
@@ -36,7 +36,7 @@ def _server_worker():
             'client_id': Env.vars['client_id'],
             'scope': Env.vars['scope'],
             'redirect_uri': Env.vars['redirect_uri'],
-            'state': Utils.get_randomized_string(16)
+            'state': OAuth2.generate_state()
         }
         
         return redirect('https://accounts.spotify.com/authorize?' + urllib.parse.urlencode(params))

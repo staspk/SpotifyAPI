@@ -8,8 +8,8 @@ from flask import Flask, redirect, request, jsonify
 # from werkzeug.serving import make_server
 from wsgiref.simple_server import make_server
 
+from kozubenko.oauth2 import OAuth2
 from kozubenko.env import Env
-from kozubenko.utils import Utils
 
 
 """
@@ -66,7 +66,7 @@ def request_token():
         'client_id': Env.vars['client_id'],
         'scope': Env.vars['scope'],
         'redirect_uri': Env.vars['redirect_uri'],
-        'state': Utils.get_randomized_string(16)
+        'state': OAuth2.generate_state()
     }
 
     requests.post('http://127.0.0.1:8080/login', params=params)
@@ -93,7 +93,7 @@ def start_local_http_server():
             'client_id': Env.vars['client_id'],
             'scope': Env.vars['scope'],
             'redirect_uri': Env.vars['redirect_uri'],
-            'state': Utils.get_randomized_string(16)
+            'state': OAuth2.generate_state()
         }
         
         return redirect('https://accounts.spotify.com/authorize?' + urllib.parse.urlencode(params))
