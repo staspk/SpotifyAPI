@@ -19,7 +19,7 @@ from definitions import SPOTIFY_ACCOUNT_DATA, SPOTIFY_EXTENDED_STREAMING_HISTORY
 
 from zipfile import ZipFile, ZIP_DEFLATED
 
-from kozubenko.print import print_red
+from kozubenko.print import Print
 
 
 parser = argparse.ArgumentParser()
@@ -27,7 +27,7 @@ parser.add_argument('name', nargs='?', help='owner of the Spotify Data. Separate
 args = parser.parse_args()
 
 if not args.name:
-    print_red('import_spotify_data.py: name {arg1} is required. For details, run: `py import_spotify_data.py --help`')
+    Print.red('import_spotify_data.py: name {arg1} is required. For details, run: `py import_spotify_data.py --help`')
     exit(0)
 
 

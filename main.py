@@ -1,8 +1,7 @@
 
 import spotify_py.auth_server as auth_server
-from kozubenko.print import *
+from kozubenko.print import Print
 from spotify_py.spotify_requests import *
-from kozubenko.print import print_red
 from spotify_py.SpotifyUser import SpotifyUser
 from kozubenko.env import Env
 
@@ -54,13 +53,13 @@ if __name__ == '__main__':
     
 
     print_list(luna_list)
-    print_red(luna_minus_stan.__len__())
-    print_red(luna_list.__len__())
+    Print.red(luna_minus_stan.__len__())
+    Print.red(luna_list.__len__())
 
     # songs = Stan.compareStreamedSongs(Luna)
     # for stan_song, luna_song in songs:
-    #     print_red(stan_song)
-    #     print_red(luna_song)
+    #     Print.red(stan_song)
+    #     Print.red(luna_song)
     #     print()
 
 

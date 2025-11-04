@@ -28,11 +28,11 @@ class SimpleRequests:
 
         if response.status_code == 200:
             data = response.json()
-            print_green(data.get('id'))
+            Print.green(data.get('id'))
             return data.get('id')
         else:
-            print_red(f'response.status_code: {response.status_code}')
-            print_red(f'error message: {response.json().get('error').get('message')}')
+            Print.red(f'response.status_code: {response.status_code}')
+            Print.red(f'error message: {response.json().get('error').get('message')}')
 
     def get_playlist(playlist_id:str, access_token:str):
         """
@@ -51,8 +51,8 @@ class SimpleRequests:
             data = response.json()
             print(json.dumps(data, indent=4))
         else:
-            print_red(f'response.status_code: {response.status_code}')
-            print_red(f'error message: {response.json().get('error').get('message')}')
+            Print.red(f'response.status_code: {response.status_code}')
+            Print.red(f'error message: {response.json().get('error').get('message')}')
     
     def get_user_playlists(access_token:str) -> Union[list, ErrorMsg]:
         """
@@ -154,12 +154,12 @@ class CreatePlaylistRequest(IHandleRequest):
     def Result(self, print=False) -> Union[PlaylistId, ErrorMsg]:
         if self.id is not None:
             if print:
-                print_green(f'CreatePlaylistRequest Executed Successfully. PlaylistId: {self.id}')
+                Print.green(f'CreatePlaylistRequest Executed Successfully. PlaylistId: {self.id}')
             return self.id
         else:
             if print:
-                print_red('CreatePlaylistRequest Failure:')
-                print_red(self.errorMsg)
+                Print.red('CreatePlaylistRequest Failure:')
+                Print.red(self.errorMsg)
             return self.errorMsg
 
 class SaveToPlaylistRequest(IHandleRequest):
@@ -276,12 +276,12 @@ class SaveToPlaylistRequest(IHandleRequest):
             success_type = type(self.result)
             if print:
                 if success_type is Success:
-                    print_green(f'SaveToPlaylistRequest successful on: {self.playlist_name} [{self.playlistId}]')
+                    Print.green(f'SaveToPlaylistRequest successful on: {self.playlist_name} [{self.playlistId}]')
                 elif success_type is PartialSuccess:
-                    print_dark_yellow(f'SaveToPlaylistRequest only partially successful.\n{self.result.description}')
+                    Print.dark_yellow(f'SaveToPlaylistRequest only partially successful.\n{self.result.description}')
             return self.result
         else:
             if print:
-                print_red('SaveToPlaylistRequest Failed:')
-                print_red(self.errorMsg)
+                Print.red('SaveToPlaylistRequest Failed:')
+                Print.red(self.errorMsg)
             return self.errorMsg

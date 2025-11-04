@@ -1,7 +1,8 @@
 import spotify_py.auth_server as auth_server
-from kozubenko.print import print_cyan
+from kozubenko.print import Print
+from spotify_py.SpotifyUser import SpotifyUser
 from spotify_py.spotify_requests import *
-from spotify_py.spotify_stats import SpotifyUser
+
 from kozubenko.env import Env
 
 from definitions import SPOTIFY_USER_DATA_DIR
@@ -18,6 +19,6 @@ if __name__ == '__main__':
     shared = Luna.compareStreamedSongs(Stan)
 
     for song1, song2 in shared:
-        print_cyan(f'{song1.title} - {song1.artist}. Luna: {song1.total_ms_played / 1000 / 60:.0f}mins. Stan: {song2.total_ms_played / 1000 / 60:.0f}mins.\n')
+        Print.cyan(f'{song1.title} - {song1.artist}. Luna: {song1.total_ms_played / 1000 / 60:.0f}mins. Stan: {song2.total_ms_played / 1000 / 60:.0f}mins.\n')
 
     print(len(shared))

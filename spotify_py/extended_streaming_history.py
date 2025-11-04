@@ -1,8 +1,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from kozubenko.print import print_green
+from kozubenko.print import Print
 from kozubenko.utils import Json
 from .IStreamed import *
+
+from .account_data import LikedSongs
 
 
 @dataclass
@@ -70,8 +72,8 @@ class AudioStreamingHistory():
         )
 
     def console_report(self):
-        print_green(f'{self.name}.history => iterated through {self.total_records} records. Unidentified: {len(self.unexpected_records)}')
-        print_green(f'   Songs      : {self.songs.__len__()}')
-        print_green(f'   Podcasts   : {self.podcasts.__len__()}')
-        print_green(f'   AudioBooks : {self.audiobooks.__len__()}')
+        Print.green(f'{self.name}.history => iterated through {self.total_records} records. Unidentified: {len(self.unexpected_records)}')
+        Print.green(f'   Songs      : {self.songs.__len__()}')
+        Print.green(f'   Podcasts   : {self.podcasts.__len__()}')
+        Print.green(f'   AudioBooks : {self.audiobooks.__len__()}')
 

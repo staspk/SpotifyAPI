@@ -11,7 +11,7 @@ from flask import Flask, redirect, request, jsonify
 from werkzeug.serving import make_server
 
 from kozubenko.env import Env
-from kozubenko.print import print_dark_gray, print_gray, print_green, print_yellow
+from kozubenko.print import Print
 from kozubenko.utils import Utils
 
 
@@ -127,9 +127,9 @@ def validate_token(reject=False):
 def _request_token():
     start_local_http_server()
 
-    print_green('\nauth_server has spun up server for Spotify Authorization Code Flow.', False)
-    print_yellow(' Login here: http://127.0.0.1:8080')
-    print_green('  lost? call auth_server.print_help()')
+    Print.green('\nauth_server has spun up server for Spotify Authorization Code Flow.', False)
+    Print.yellow(' Login here: http://127.0.0.1:8080')
+    Print.green('  lost? call auth_server.print_help()')
     print()
 
     input(f'\033[93m  When redirected to success page, Press Enter to continue...\033[0m')
@@ -165,19 +165,19 @@ def _refresh_token():
         Env.save('token_expiration', token_expiration.strftime('%Y-%m-%d %H:%M'))
         if 'refresh_token' in response_data:
             Env.save('refresh_token', response_data['refresh_token'])
-            print_green('new refresh token saved to .env')
+            Print.green('new refresh token saved to .env')
     else:
         RuntimeError(f'_refresh_token() not implemented for response.status_code == {response.status_code}.')
 
 def print_help():
-    print_yellow('\nSpotify Authorization Code Flow -> ')
-    print_yellow('    Use auth_server.validate_token(). Required example .env file:')
-    print_gray('project_root/.env/.env:')
-    print_dark_gray(f'client_id=7b0acca87e49424190a5eee6c8a63fe9')
-    print_dark_gray('client_secret=f53b708a121e4e3da5aee75814c394ab')
-    print_dark_gray('scope=playlist-modify-public user-top-read user-library-read user-library-modify')
-    print_dark_gray(f'redirect_uri=http://127.0.0.1:8080/callback')
+    Print.yellow('\nSpotify Authorization Code Flow -> ')
+    Print.yellow('    Use auth_server.validate_token(). Required example .env file:')
+    Print.gray('project_root/.env/.env:')
+    Print.dark_gray(f'client_id=7b0acca87e49424190a5eee6c8a63fe9')
+    Print.dark_gray('client_secret=f53b708a121e4e3da5aee75814c394ab')
+    Print.dark_gray('scope=playlist-modify-public user-top-read user-library-read user-library-modify')
+    Print.dark_gray(f'redirect_uri=http://127.0.0.1:8080/callback')
     print()
-    print_yellow('For more details, see: https://developer.spotify.com/documentation/web-api/tutorials/code-flow\n')
+    Print.yellow('For more details, see: https://developer.spotify.com/documentation/web-api/tutorials/code-flow\n')
     print('\n')
 
