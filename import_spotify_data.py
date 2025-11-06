@@ -22,14 +22,14 @@ from zipfile import ZipFile, ZIP_DEFLATED
 from kozubenko.print import Print
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument('name', nargs='?', help='owner of the Spotify Data. Separate `*.zips` will be categorized under this name.')
-args = parser.parse_args()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('name', nargs='?', help='owner of the Spotify Data. Separate `*.zips` [Spotify Data Types] will be categorized under this name.')
+    args = parser.parse_args()
 
-if not args.name:
-    Print.red('import_spotify_data.py: name {arg1} is required. For details, run: `py import_spotify_data.py --help`')
-    exit(0)
-
+    if not args.name:
+        Print.red('import_spotify_data.py: name {arg1} is required. For details, run: `py import_spotify_data.py --help`')
+        exit(0)
 
 
 # dir_to_archive => full path of directory to archive; DATA_CATEGORY => See 'my_spotify_data.zip' Folder Names in definitions.py
@@ -91,5 +91,5 @@ def Import_Spotify_Data(name:str):
     save_user_data_to_project_files(name, path_to_zip)
 
 
-
-Import_Spotify_Data(args.name)
+if __name__ == "__main__":
+    Import_Spotify_Data(args.name)

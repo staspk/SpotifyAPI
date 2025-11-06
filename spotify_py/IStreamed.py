@@ -43,6 +43,9 @@ class IStreamed():
         return self
     
     def __lt__(self, other):
+        """
+        This supports: `sorted(songs_streamed.values())`
+        """
         if not isinstance(other, IStreamed):
             raise TypeError('__lt__ only possible between classes that implement IStreamed')
         return self.total_ms_played < other.total_ms_played
@@ -67,7 +70,7 @@ class IStreamed():
 @dataclass()
 class StreamedSong(IStreamed, ISong):
     """
-    An possible shape of a record in `Streaming_History_Audio_***.json`.
+    Possible shape of a record in `Streaming_History_Audio_***.json`.
 
     `spotify_track_uri` will not be null. example form: `spotify:track:4GnkzqMpGmJIGt8geJetwF`
     """
@@ -79,6 +82,13 @@ class StreamedSong(IStreamed, ISong):
 
     def __eq__(self, other):
         return ISong.__eq__(self, other)
+    
+    def __hash__(self):
+        """
+        works alongside `__eq__` to make list comprehensions possible.  
+        e.g: this `__hash__()` makes this part work `if song not in self._songs_liked` in `lost_song_candidates()`
+        """
+        return ISong.__hash__(self)
 
     def __repr__(self):
         return f'Song:{self.title}:{self.artist}'

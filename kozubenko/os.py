@@ -15,6 +15,11 @@ class File(Path):
     """
     inherits `Path` -> allows you to use `File()` constructor instead of `os.path.join`. Is a `str`, at it's core.
     """
+
+    def save(self, _str:str, encoding='UTF-16'):
+        with open(self, 'w', encoding=encoding) as file:
+            file.write(_str)
+
     @staticmethod
     def exists(path:str, *paths:str) -> str|None:
         """
@@ -24,7 +29,7 @@ class File(Path):
         if(os.path.isfile(file)):
             return file
         return None
-    
+
 class Directory(Path):
     """
     inherits `Path` -> allows you to use `Directory()` constructor instead of `os.path.join`. Is a `str`, at it's core.
@@ -55,7 +60,7 @@ class Directory(Path):
         return files
 
 def Downloads_Directory() -> str:
-    """
+    r"""
     - **Windows:** returns downloads value under: `Registry:SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`
     - **Mac/Linux:** returns `~/Downloads`
     """

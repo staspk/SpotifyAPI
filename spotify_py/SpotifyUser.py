@@ -1,24 +1,13 @@
-import os
-from dataclasses import dataclass
 from datetime import datetime
-from typing import Self
-from kozubenko.print import *
 from kozubenko.os import Directory
 from kozubenko.json import Json
-from .account_data import AccountData, ILikedSongs
+from .account_data import AccountData, DuplicateSong
 from .ISong import ISong
-from spotify_py.IStreamed import StreamedSong
+from .IStreamed import StreamedSong
 from spotify_py.extended_streaming_history import AudioStreamingHistory, ExtendedStreamingHistory
 from definitions import SPOTIFY_USER_DATA_DIR
 
 
-@dataclass()
-class LikedSong(ISong):
-    uri:str
-
-    def __repr__(self):
-        return f'LikedSong:{self.title}:{self.artist}'
-    
 
 class SpotifyUser:
     """
@@ -32,16 +21,16 @@ class SpotifyUser:
     def __init__(self, name:str):
         self.name = name
 
-        self.account_creation_time:datetime = None
+        self._account_creation_time:datetime = None
         if(data := Json.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Account Data', 'Userdata.json')):
-            self.account_creation_time = datetime.strptime(data['creationTime'], "%Y-%m-%d")
+            self._account_creation_time = datetime.strptime(data['creationTime'], "%Y-%m-%d")
 
-        self.liked:ILikedSongs
+        self._songs_liked:list[ISong]; self._songs_duplicates:list[DuplicateSong]
         if(data := Json.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Account Data', 'YourLibrary.json')):
-            (self.songs_liked,
-             self.songs_duplicates) = AccountData.Parse(self.name, data)
+            (self._songs_liked,
+             self._songs_duplicates) = AccountData.Parse(self.name, data)
 
-        self.history:AudioStreamingHistory = ExtendedStreamingHistory.Parse(
+        self._history:AudioStreamingHistory = ExtendedStreamingHistory.Parse(
             self.name,
             Directory.files(
                 Directory(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Extended Streaming History'),
@@ -49,106 +38,28 @@ class SpotifyUser:
             )
         )
 
-
-    def _getSortedList(dictInQuestion, minsCutoff) -> list:
-        toReturnList = []
-        msCutoff = (minsCutoff * 60 * 1000)
-
-        for song in dictInQuestion.values():
-            if song.total_ms_played > msCutoff:
-                toReturnList.append(song)
-
-        toReturnList.sort()
-        # print(f'Sorting done in _getSortedList(). toReturnList Count: {len(toReturnList)}')
-        return toReturnList
-
-    def getSortedSongStreamingHistory(self, minsCutoff = 30, ascending=False) -> list[StreamedSong]:
-        list = SpotifyUser._getSortedList(self.songs_streamed, minsCutoff)
-        if not ascending:
-            list.sort(key=lambda song: song.total_ms_played, reverse=True)
-        return list
-    
-    def getSortedPodcastStreamingHistory(self, minsCutoff = 30) -> list[StreamedSong]:
-        return SpotifyUser._getSortedList(self.podcasts_streamed, minsCutoff)
-    
-    def printDuplicateSongs(self):
-        for key, value in self.songs_duplicates.items():
-            print(f'{key}: {value}')
-        print(f'Total: {len(self.songs_duplicates)}')
-
-    def printLikedSongs(self):
-        for song in SpotifyUser.songs_liked:
-            print(str(song))
-            print()
-        print(f'Total: {len(SpotifyUser.songs_liked)}')
-
-    def getLikedSongs(self) -> list:
-        liked_songs_list = list(self.songs_liked.values())
-
-        # liked_songs_list = [ISong(value) for value in self.songs_liked.values()]
-
-        return liked_songs_list
-
-    def compareStreamedSongs(self, other:Self, min_mins_cutoff = 20) -> list[tuple[StreamedSong, StreamedSong]]:
-        if not isinstance(other, SpotifyUser):
-            return AssertionError('other must be an instance of SpotifyUser')
-        
-        MS_CUTOFF = (min_mins_cutoff * 60 * 1000)
-        
-        my_list = [song for song in self.songs_streamed.values() if song.total_ms_played > MS_CUTOFF]
-        other_list = [song for song in other.songs_streamed.values() if song.total_ms_played > MS_CUTOFF]
-
-
-        
-        list1 = self.getSortedSongStreamingHistory(min_mins_cutoff)
-        list2 = other.getSortedSongStreamingHistory(min_mins_cutoff)
-        shared_songs: list[tuple[StreamedSong, StreamedSong]] = []
-        
-        for song1 in list1:
-            for i in range(len(list2)):
-                if song1 == list2[i]:
-                    shared_songs.append((song1, list2[i]))
-
-        return shared_songs
-
-    def getLostSongCandidates(self, min_mins_listened=20) -> list[StreamedSong]:
+    @staticmethod
+    def I_want_her_favorite_songs(me:SpotifyUser, her:SpotifyUser, minimum_listen_time_in_hours = 3) -> list[StreamedSong]:
+        """  technically: her `lifetime_listening_record`, filtered by `minimum_listen_time_in_hours`, subtracted by my `songs_liked`  
+          
+        **Requirements:**
+            - `Spotify Account Data` for `me`
+            - `Spotify Extended Streaming History` for `her` 
         """
-        Required:\n
-        - Spotify Account Data
-        - Extended Streaming History
+        return [song for song in her.song_streaming_history(minimum_listen_time_in_hours*60) if song not in me._songs_liked]
 
-        Will get a list of your most listened songs that exceed min_mins_listened, subtract your Liked Songs from it, and return That
+    def favorite_songs(self, minimum_listen_time_in_hours = 3) -> list[StreamedSong]:
+        """  technically: `lifetime_listening_record`, filtered by `minimum_listen_time_in_hours`
+        Required: `Spotify Extended Streaming History`  """
+        return [song for song in self.song_streaming_history(minimum_listen_time_in_hours*60)]
+
+    def lost_song_candidates(self, minimum_listen_time_in_minutes = 20) -> list[StreamedSong]:
+        """  technically: a minimum_listen_time_in_minutes-filtered `lifetime_listening_record` - `LikedSongs`  
+        Required: `Spotify Extended Streaming History` + `Spotify Account Data`
         """
-        if len(self.songs_streamed) == 0:
-            raise AssertionError('Can only call SpotifyUser.getLostSongCandidates() if Spotify has been fed the "Spotify Extended Streaming History" json data.')
-        
-        msCutoff = (min_mins_listened * 60 * 1000)
-        songsStreamedCopy = {}
-
-        for song in self.songs_streamed.values():
-            if song.total_ms_played > msCutoff:
-                songsStreamedCopy[repr(song)] = song
-
-        if len(self.songs_liked) > 0:
-            for song in self.songs_liked.values():
-                songsStreamedCopy.pop(repr(song), None)
-
-        count = 0
-        for song in songsStreamedCopy.values():
-            count +=1
-
-        candidateList = list(songsStreamedCopy.values())
-        candidateList.sort()
-        return candidateList
-
-    def saveLostSongCandidatesToFile(self, minsCutoff=10, toFile=r'.\lost_song_candidates.txt'):
-        candidates = self.getLostSongCandidates(minsCutoff)
-        SpotifyUser.saveListToFile(candidates, toFile)
-        print(f'Lost Song Candidate file created at: {os.path.abspath(toFile)}')
-
-    def saveListToFile(list, file_path=r'.\out.txt'):
-        with open(fr'{file_path}', 'w', ) as file:
-            for item in list:
-                file.write(str(item))
-                file.write('\n\n')
-
+        return [song for song in self.song_streaming_history(minimum_listen_time_in_minutes) if song not in self._songs_liked]
+    
+    def song_streaming_history(self, minimum_listen_time_in_minutes = 30) -> list[StreamedSong]:
+        """  technically: `lifetime_listening_record`, filtered by `minimum_listen_time_in_minutes`  
+        Required: `Spotify Extended Streaming History`  """
+        return [song for song in self._history.songs if (song.total_ms_played > minimum_listen_time_in_minutes*60*1000)]

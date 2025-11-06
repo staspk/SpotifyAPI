@@ -47,6 +47,6 @@ class AccountData:
                 duplicate.total_duplicates += 1
                 duplicates[duplicate.song] = duplicate
             else:
-                liked.add(song)                
+                liked.add(song)
 
         return (liked, duplicates.values())
