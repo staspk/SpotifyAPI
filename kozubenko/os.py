@@ -55,7 +55,7 @@ class Directory(Path):
         return files
 
 def Downloads_Directory() -> str:
-    """
+    r"""
     - **Windows:** returns downloads value under: `Registry:SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`
     - **Mac/Linux:** returns `~/Downloads`
     """
