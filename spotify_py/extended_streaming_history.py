@@ -1,4 +1,3 @@
-from __future__ import annotations
 from dataclasses import dataclass
 from kozubenko.print import Print
 from kozubenko.json import Json

@@ -1,4 +1,3 @@
-from __future__ import annotations
 from dataclasses import dataclass
 from spotify_py.ISong import ISong
 
