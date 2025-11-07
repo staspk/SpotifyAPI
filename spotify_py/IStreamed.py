@@ -91,10 +91,9 @@ class StreamedSong(IStreamed, ISong):
         return ISong.__hash__(self)
 
     def __repr__(self):
-        return f'Song:{self.title}:{self.artist}'
+        return f'StreamedSong:{self.title}:{self.artist}'
        
     def __str__(self):
-        # string = f'{self.uri}'
         string = f'{ISong.__str__(self)}\n'
         string += f'{IStreamed.__str__(self)}\n'
         string += f'{self.uri}'
