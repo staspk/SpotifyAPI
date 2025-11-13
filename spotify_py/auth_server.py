@@ -1,183 +1,140 @@
-"""
-`auth_server.validate_token()`\n
-`auth_server.print_help()`
-"""
+import base64, urllib, requests, socketserver, http.server, threading
 from datetime import datetime, timedelta
-import multiprocessing
-from pathlib import Path
-
-import requests, urllib, base64, json
-from flask import Flask, redirect, request, jsonify
-from werkzeug.serving import make_server
-
-from kozubenko.env import Env
-from kozubenko.print import Print
+from kozubenko.print import ANSI, Print, Write
+from kozubenko.html import Html
+from kozubenko.http import Http
+from kozubenko.url import Url
 from kozubenko.OAuth2 import OAuth2
+from kozubenko.env import Env
 
 
+class SpotifyOAuth(threading.Thread):
+    """
+    Using the `Spotify Web API` (creating playlists, etc.) requires an `access_token`  
 
-def _server_worker():
-    app = Flask(__name__)
+    `SpotifyOAuth.Validate_Access_Token()` the only call you need.
+    """
+    redirect_uri = 'http://127.0.0.1:8080/callback'
+    scopes_needed = 'playlist-read-private playlist-read-collaborative user-library-read user-library-modify playlist-modify-public user-top-read'
 
-    import logging
-    log = logging.getLogger('werkzeug')
-    log.setLevel(logging.ERROR)
+    IP, PORT = "127.0.0.1", 8080
+    Instance = None
 
-    @app.route('/')
-    def home():
-        return '<div><a href="http://127.0.0.1:8080/login">LOGIN</a></div>'
+    def Validate_Access_Token(reject=False):
+        """
+        Either procures an `access_token` (will ask user to login into Spotify/grant permissions)  
+        or simply refreshes an existing token via a POST call.
+        """
+        Env.Load()
+        access_token = Env.Vars.get('access_token', None)
+        refresh_token = Env.Vars.get('refresh_token', None)
+        token_expiration_str = Env.Vars.get('token_expiration', None)
 
-    @app.route('/login')
-    def login():
-        Env.load()
-
-        params = {
-            'response_type': 'code',
-            'client_id': Env.vars['client_id'],
-            'scope': Env.vars['scope'],
-            'redirect_uri': Env.vars['redirect_uri'],
-            'state': OAuth2.generate_state()
-        }
+        if not (access_token and refresh_token and token_expiration_str) or reject is True:
+            SpotifyOAuth.spotify_authorization_code_flow(); return
         
-        return redirect('https://accounts.spotify.com/authorize?' + urllib.parse.urlencode(params))
+        expiration = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M:%S') - timedelta(minutes=5)
+        if datetime.now() > expiration:
+            if not SpotifyOAuth.refresh_token():
+                SpotifyOAuth.spotify_authorization_code_flow()
 
-    @app.route('/callback')
-    def callback():
-        Env.load()
+    def __init__(self, IP=IP, PORT=PORT):
+        if(IP): SpotifyOAuth.IP = IP
+        if(PORT): SpotifyOAuth.PORT = PORT
+        threading.Thread.__init__(self, name='AuthServer_thread', daemon=True)
+        SpotifyOAuth.Instance = self
 
-        code = request.args.get('code', None)
-        state = request.args.get('state', None)
+    def stop(message=False):
+        if SpotifyOAuth.Instance is not None:
+            SpotifyOAuth.Instance.http_daemon.shutdown()
+            SpotifyOAuth.Instance = None
+            if(message): Print.green('AuthServer Stopped!')
 
-        if not state:
-            return redirect('/#' + urllib.parse.urlencode({'error': 'state_mismatch'}))
-        
-        token_url = 'https://accounts.spotify.com/api/token'
+    def run(self):
+        """ `threading.Thread` override, is the unit of work """
+        with socketserver.TCPServer((SpotifyOAuth.IP, SpotifyOAuth.PORT), Server) as http_daemon:
+            self.http_daemon = http_daemon
+            http_daemon.serve_forever(poll_interval=.5)
 
+    def refresh_token() -> bool:
+        Env.Load()
+        refresh_token = Env.Vars.get('refresh_token', None)
+
+        url = 'https://accounts.spotify.com/api/token'
         headers = {
-            'content-type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Basic ' + base64.b64encode(f'{Env.vars['client_id']}:{Env.vars['client_secret']}'.encode()).decode('utf-8')
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Authorization': 'Basic ' + base64.b64encode(f'{Env.Vars['client_id']}:{Env.Vars['client_secret']}'.encode()).decode('utf-8')
+        }
+        body = {
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token
         }
 
-        data = {
-            'code': code,
-            'redirect_uri': Env.vars['redirect_uri'],
-            'grant_type': 'authorization_code'
-        }
-
-        response = requests.post(token_url, headers=headers, data=data, json=True)
-        timestamp = response.headers['date']
-
+        response = requests.post(url, headers=headers, data=body)
         if response.status_code == 200:
-            token_info = response.json()
+            data = response.json()
+            expiration = datetime.now() + timedelta(seconds=int(data['expires_in']))
 
-            env_dir = r'.\.env'
-            Path(env_dir).mkdir(parents=True, exist_ok=True)
-
-            with open(fr'{env_dir}\spotify_auth_token.json', 'w') as json_file:
-                json.dump(token_info, json_file)
-            
-            with open(fr'{env_dir}\spotify_auth_token_readable.json', 'w') as json_file:
-                json.dump(token_info, json_file, indent=4)
-
-            Env.save('access_token', token_info['access_token'])
-            Env.save('refresh_token', token_info['refresh_token'])
-            token_expiration = datetime.now() + timedelta(seconds=int(token_info['expires_in']))
-            Env.save('token_expiration', token_expiration.strftime('%Y-%m-%d %H:%M'))
-
-            return jsonify(token_info)
+            Env.Save('access_token', data['access_token'])
+            Env.Save('token_expiration', expiration.strftime('%Y-%m-%d %H:%M:%S'))
+            if 'refresh_token' in data: Env.Save('refresh_token', data['refresh_token'])
+            return True
         else:
-            print(f'/CallBack endpoint hit. response.status_code == {response.status_code}')
-            return jsonify({'error': 'Failed to get token'}), response.status_code
+            Print.dark_red(f'AuthServer.refresh_token(): POST error, status_code: {response.status_code}')
+            return False
+
+    def spotify_authorization_code_flow():
+        """  Generates link that starts the `access_token` procurement process, and waits for user. Actual process handled by `Server`. """
+        SpotifyOAuth().start()
+        endpoint = 'https://accounts.spotify.com/authorize?' + urllib.parse.urlencode({
+            'response_type': 'code',
+            'client_id': Env.Vars['client_id'],
+            'scope': SpotifyOAuth.scopes_needed,
+            'redirect_uri': SpotifyOAuth.redirect_uri,
+            'state': OAuth2.generate_state(),
+            'show_dialog': True
+        })
+
+        Write.lite_red('\nNeed Permissions Grant through Spotify.'); Write.lite_green(' Please Login '); Print.lite_red('using this link:')
+        Print.dark_gray(f'  {endpoint}')
+        input(f'{ANSI.LITE_RED.value}\n  When redirected to success page, {ANSI.LITE_GREEN.value}Press Enter {ANSI.LITE_RED.value}to continue...\033[0m')
+
+        access_token, refresh_token, token_expiration = Env.Vars.get('access_token', None), Env.Vars.get('refresh_token', None), Env.Vars.get('token_expiration', None)
+        if not(access_token and refresh_token and token_expiration):
+            Print.dark_red('\nAuthServer.spotify_authorization_code_flow(): Process Not Complete! Expect Errors attempting to use the Spotify WebApi.\n')
+        SpotifyOAuth.stop()
         
-    server = make_server('127.0.0.1', 8080, app)
-    ctx = app.app_context()
-    ctx.push()
+class Server(http.server.SimpleHTTPRequestHandler):
+    def do_GET(self):
+        url = Url(self.path)
+        if url.pathname == '/callback':
+            code  = url.params.get('code', [None])[0]
+            state = url.params.get('state', [None])[0]  # in the future can be used to protect against cross-site request forgery
 
-    server.serve_forever()
+            if not (code and state):
+                return
 
-def start_local_http_server():
-    global server_process
-    server_process = multiprocessing.Process(target=_server_worker, name="LocalServerProcess")
-    
-    server_process.start()
+            url = 'https://accounts.spotify.com/api/token'
+            headers = {
+                'content-type': 'application/x-www-form-urlencoded',
+                'Authorization': 'Basic ' + base64.b64encode(f'{Env.Vars.get('client_id', None)}:{Env.Vars.get('client_secret', None)}'.encode()).decode('utf-8')
+            }
+            data = {
+                'code': code,
+                'redirect_uri': SpotifyOAuth.redirect_uri,
+                'grant_type': 'authorization_code'
+            }
 
-def stop_local_http_server():
-    server_process.terminate()
-    server_process.join()
-
-def validate_token(reject=False):
-    """
-    The only "public" function you need to get a Spotify Authorization Token.
-
-    `if __name__ == '__main__':` guard clause required due to use of multi-processing
-    """
-    Env.load()
-    token_expiration_str = Env.vars.get('token_expiration', None)
-    
-    if token_expiration_str is None or reject is True:
-        _request_token()
-        return
-
-    expiration = datetime.strptime(token_expiration_str, '%Y-%m-%d %H:%M')
-    now = datetime.now()
-    
-    if now > expiration - timedelta(minutes=3):
-        _refresh_token()
-
-def _request_token():
-    start_local_http_server()
-
-    Print.green('\nauth_server has spun up server for Spotify Authorization Code Flow.', False)
-    Print.yellow(' Login here: http://127.0.0.1:8080')
-    Print.green('  lost? call auth_server.print_help()')
-    print()
-
-    input(f'\033[93m  When redirected to success page, Press Enter to continue...\033[0m')
-
-    stop_local_http_server()
-
-def _refresh_token():
-    Env.load()
-    refresh_token = Env.vars.get('refresh_token', None)
-    url = 'https://accounts.spotify.com/api/token'
-
-    if not refresh_token:
-        print('Found an expired token in .env, but refresh_token missing in .env file')
-        print('Please re-run with auth_server.validate_token(reject=True) to get new Authorization Token')
-        exit()
-
-    headers = {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': 'Basic ' + base64.b64encode(f'{Env.vars['client_id']}:{Env.vars['client_secret']}'.encode()).decode('utf-8')
-    }
-
-    body = {
-        'grant_type': 'refresh_token',
-        'refresh_token': refresh_token
-    }
-
-    response = requests.post(url, headers=headers, data=body)
-
-    if response.status_code == 200:
-        response_data = response.json()
-        Env.save('access_token', response_data['access_token'])
-        token_expiration = datetime.now() + timedelta(seconds=int(response_data['expires_in']))
-        Env.save('token_expiration', token_expiration.strftime('%Y-%m-%d %H:%M'))
-        if 'refresh_token' in response_data:
-            Env.save('refresh_token', response_data['refresh_token'])
-            Print.green('new refresh token saved to .env')
-    else:
-        RuntimeError(f'_refresh_token() not implemented for response.status_code == {response.status_code}.')
-
-def print_help():
-    Print.yellow('\nSpotify Authorization Code Flow -> ')
-    Print.yellow('    Use auth_server.validate_token(). Required example .env file:')
-    Print.gray('project_root/.env/.env:')
-    Print.dark_gray(f'client_id=7b0acca87e49424190a5eee6c8a63fe9')
-    Print.dark_gray('client_secret=f53b708a121e4e3da5aee75814c394ab')
-    Print.dark_gray('scope=playlist-modify-public user-top-read user-library-read user-library-modify')
-    Print.dark_gray(f'redirect_uri=http://127.0.0.1:8080/callback')
-    print()
-    Print.yellow('For more details, see: https://developer.spotify.com/documentation/web-api/tutorials/code-flow\n')
-    print('\n')
-
+            response = requests.post(url, headers=headers, data=data, json=True)
+            if response.status_code == 200:
+                data = response.json()
+                expiration = datetime.now() + timedelta(seconds=int(data['expires_in']))
+                Env.Save({
+                    'access_token': data['access_token'],
+                    'refresh_token': data['refresh_token'],
+                    'token_expiration': expiration.strftime('%Y-%m-%d %H:%M:%S')
+                })
+                Http.handle_get(self, Html.Success().encode())
+            else:
+                Http.handle_get(self, Html.Error().encode())
+        else: self.send_error(404, 'does not exist')
