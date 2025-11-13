@@ -30,10 +30,8 @@ SaveToPlaylistRequest.New_Playlist(
  - **Generate Secrets**
  	- Register your app on [Developer Dashboard](https://developer.spotify.com/dashboard)
     	- *Redirect URI*: *`http://127.0.0.1:8080/callback`*
-  	- In project directory, create `./.env/.env`:
+  	- After registration, use values to complete the template file: `./.env/.env`:
 	    ```
 		client_id={Client ID}
 		client_secret={Client secret}
-		scope=playlist-read-private playlist-read-collaborative user-library-read user-library-modify playlist-modify-public user-top-read
-		redirect_uri=http://127.0.0.1:8080/callback
 	    ```
