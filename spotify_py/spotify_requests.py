@@ -17,8 +17,8 @@ class SimpleRequests:
         endpoint = 'https://api.spotify.com/v1/me'
 
         if access_token is None:
-            Env.load()
-            access_token = Env.vars.get('access_token')
+            Env.Load()
+            access_token = Env.Vars.get('access_token')
 
         headers = {
             'Authorization': f'Bearer {access_token}'

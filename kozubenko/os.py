@@ -15,8 +15,21 @@ class File(Path):
     """
     inherits `Path` -> allows you to use `File()` constructor instead of `os.path.join`. Is a `str`, at it's core.
     """
+    def fp(self, mode='w', encoding='UTF-16'): return open(self, mode, encoding=encoding)
+
+    def contents(self, encoding='UTF-16'):
+        with open(self, 'r', encoding=encoding) as file:
+            return file.read()
+        
+    def append(self, _str:str, encoding='UTF-16'):
+        directory = os.path.dirname(self)
+        if not os.path.exists(directory): os.makedirs(directory, exist_ok=True)
+        with open(self, 'a', encoding=encoding) as file:
+            file.write(_str)
 
     def save(self, _str:str, encoding='UTF-16'):
+        directory = os.path.dirname(self)
+        if not os.path.exists(directory): os.makedirs(directory, exist_ok=True)
         with open(self, 'w', encoding=encoding) as file:
             file.write(_str)
 
@@ -30,6 +43,13 @@ class File(Path):
             return file
         return None
 
+class LogFile(File):
+    def prepend(self, text:str):
+        if File.exists(self):
+            with open(self, 'r', encoding='utf-8') as file: existing_text = file.read()
+        else: existing_text = ""
+        with open(self, 'w', encoding='utf-8') as file: file.write(text + existing_text)
+        
 class Directory(Path):
     """
     inherits `Path` -> allows you to use `Directory()` constructor instead of `os.path.join`. Is a `str`, at it's core.
@@ -45,9 +65,9 @@ class Directory(Path):
         return None
     
     @staticmethod
-    def files(path:str, str:str) -> list[str]:
+    def files(path:str, str:str=None) -> list[File]:
         """
-        Returns a `List` of absolute paths of files at `path` with `str in filename`
+        Returns a `List` of `Files`(absolute paths) at `path`. filters by `str in filename`, if `str` not `None`
 
         **Example:**
         >>>  if(files := Directory.files(EXTENDED_STREAMING_HISTORY, 'Streaming_History_Audio')):
@@ -55,7 +75,9 @@ class Directory(Path):
         files:list[File] = []
         if(os.path.exists(path)):
             for file in os.listdir(path):
-                if str in file:
+                if (str):
+                    if str in file: files.append(File(os.path.join(path, file)))
+                else:
                     files.append(File(os.path.join(path, file)))
         return files
 
