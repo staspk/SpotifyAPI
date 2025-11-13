@@ -5,8 +5,7 @@ from time import sleep
 import werkzeug
 from kozubenko.os import File
 from kozubenko.string import String
-from spotify_py.auth_server import AuthServer
-import spotify_py.auth_server2 as auth_server2
+from spotify_py.spotify_auth import AuthServer
 from kozubenko.print import Print
 from spotify_py.spotify_requests import *
 from spotify_py.SpotifyUser import SpotifyUser
@@ -14,9 +13,6 @@ from kozubenko.env import Env
 from definitions import PROJECT_ROOT_DIRECTORY, SPOTIFY_USER_DATA_DIR
 
 
-
-AuthServer().start()
-# AuthServer.get()
 
 time.sleep(12)
 
