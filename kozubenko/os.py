@@ -81,6 +81,17 @@ class Directory(Path):
                     files.append(File(os.path.join(path, file)))
         return files
 
+def Application_Data_Directory(app_name:str) -> str:
+    """
+    - **Windows:** *`C:/Users/{user}/AppData/Roaming/{ApplicationName}`*  
+    - **Mac/Linux:** *`home/{user}/.{ApplicationName}/`*
+    """
+    if os.name == 'nt': path = os.path.join(os.getenv("APPDATA"), app_name)
+    else:               path = os.path.join(os.path.expanduser("~"), f'.{app_name}')
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
 def Downloads_Directory() -> str:
     r"""
     - **Windows:** returns downloads value under: `Registry:SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders`
