@@ -40,11 +40,16 @@ class ANSI(enum.Enum):
     DARK_YELLOW = "\033[33m"
     RESET       = "\033[0m"
 
+    # 24-bit (TrueColor)
+    ROSE_GOLD   = "\033[38;2;255;196;201m"
+    LITE_RED   = "\033[38;2;232;107;118m"
+    LITE_GREEN = "\033[38;2;96;223;107m"
+
 
 class Print:
     def list(list:list, color:ANSI=None, flip=False):
         """
-        `flip` will  refers to a `descending` `ascending`
+        `flip` - i.e: `descending`/`ascending` order
         """
         if(flip):
             list = reversed(list)
@@ -79,6 +84,33 @@ class Print:
         """
         if sys.stdout.isatty():
             print(f"{ANSI.RED.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def rose_gold(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.ROSE_GOLD.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def lite_red(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.LITE_RED.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def lite_green(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.LITE_GREEN.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -153,3 +185,25 @@ class Print:
             print(f"{ANSI.DARK_YELLOW.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
+
+class Write:
+    """
+    The no-new-line-at-end version of Print
+    """
+    def lite_red(text:str):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.LITE_RED.value}{text}{ANSI.RESET.value}", end="")
+        else:
+            print(text, end="")
+
+    def lite_green(text:str):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.LITE_RED.value}{text}{ANSI.RESET.value}", end="")
+        else:
+            print(text, end="")
