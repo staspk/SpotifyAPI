@@ -2,7 +2,19 @@ import os, json
 from typing import Any
 
 class Json:
-    def load(file:str, encoding='UTF-8'):
+    def save(path:str, data:Any, indent=None):
+        """
+        Code Example:: 
+        ```python
+        response:requests.Response = requests.post('https://accounts.spotify.com/api/token', headers=headers, data=data, json=True)
+        if response.status_code == 200: Json.save(fr'{OUT}/response.json', response.json)
+        ```
+        """
+        with open(path, 'w') as file:
+            if indent: json.dump(data, file, indent=indent)
+            else: json.dump(data, file)
+            
+    def load(file:str, encoding='UTF-8') -> Any | Exception:
         """
         returns data via `json.load(file)`
         """
