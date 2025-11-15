@@ -10,7 +10,7 @@ class OAuth2():
         uses `Random.string` under the hood, `_len` and `_from` set to the ideal params
 
         **Example:**
-        >>> Env.load()
+        >>> if not Env.loaded: Env.Load()
         >>> params = {
             'response_type': 'code',
             'client_id': Env.vars['client_id'],

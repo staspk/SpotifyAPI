@@ -45,10 +45,15 @@ class File(Path):
 
 class LogFile(File):
     def prepend(self, text:str):
+        directory = os.path.dirname(self)
+        if not os.path.exists(directory): os.makedirs(directory, exist_ok=True)
+
+        existing_text = ""
         if File.exists(self):
-            with open(self, 'r', encoding='utf-8') as file: existing_text = file.read()
-        else: existing_text = ""
-        with open(self, 'w', encoding='utf-8') as file: file.write(text + existing_text)
+            with open(self, 'r', encoding='utf-8') as file:
+                existing_text = file.read()
+        with open(self, 'w', encoding='utf-8') as file:
+            file.write(text + existing_text)
         
 class Directory(Path):
     """
