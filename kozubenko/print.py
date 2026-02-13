@@ -1,0 +1,226 @@
+from os import PathLike
+import sys, enum
+from typing import Callable, Literal, Union
+
+
+FileDescriptorOrPath = Union[int, str, bytes, PathLike[str], PathLike[bytes]]
+WritableTextMode = Literal[
+    'w',    # write
+    'a',    # append
+    'x',    # exclusive create
+    'w+',   # write/read
+    'a+',   # append/read
+    'x+',   # exclusive create/read
+    'wt',   # write (text mode)
+    'at',   # append (text mode)
+    'xt',   # exclusive create (text mode)
+    'wt+',  # write/read (text)
+    'at+',  # append/read (text)
+    'xt+'   # exclusive create/read (text)
+]
+def redirect_print_to_file(file:FileDescriptorOrPath, mode:WritableTextMode, print_function:Callable):
+    """
+    Example Use: `redirect_print_to_file(report, 'w', lambda: print_list(problem_chapters))`
+    """
+    with open(file, mode, encoding="UTF-8") as file:
+        old_stdout = sys.stdout
+        sys.stdout = file
+        try:
+            print_function()
+        finally:
+            sys.stdout = old_stdout
+
+def print_dict(_dict:dict):
+    """
+    Recommended for more complex dicts (but uses repr instead):
+     `import pprint`
+     `pprint.pprint(_dict)`
+    """
+    for key, value in _dict.items():
+        print(f'{key}: {value}\n')
+
+
+class ANSI(enum.StrEnum):
+    GREEN       = "\033[92m"
+    YELLOW      = "\033[93m"
+    RED         = "\033[91m"
+    CYAN        = "\033[96m"
+    WHITE       = "\033[97m"
+    GRAY        = "\033[37m"
+    BLUE        = "\033[36m"
+    DARK_RED    = "\033[31m"
+    DARK_GRAY   = "\033[90m"
+    DARK_GREEN  = "\033[32m"
+    DARK_YELLOW = "\033[33m"
+    RESET       = "\033[0m"
+
+    # 24-bit (TrueColor)
+    ROSE_GOLD   = "\033[38;2;255;196;201m"
+    LITE_RED   = "\033[38;2;232;107;118m"
+    LITE_GREEN = "\033[38;2;96;223;107m"
+
+def colored_input(string:str, color:ANSI=ANSI.YELLOW):
+    input(f'{color}{string}{ANSI.RESET}')
+
+
+class Print:
+    def list(list:list, color:ANSI=None, flip=False):
+        """
+        `flip` - i.e: `descending`/`ascending` order
+        """
+        if(flip):
+            list = reversed(list)
+
+        for item in list:
+            if(sys.stdout.isatty()):
+                print(f'{color}{item}{ANSI.RESET}\n') if color else print(f'{item}\n')
+            else:
+                print(f'{item}\n')
+
+    def green(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.GREEN}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+            
+    def yellow(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.YELLOW}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def red(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.RED}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def rose_gold(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.ROSE_GOLD}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def lite_red(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.LITE_RED}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def lite_green(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.LITE_GREEN}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def cyan(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.CYAN}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def white(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.WHITE}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def gray(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.GRAY}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def blue(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.BLUE}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def dark_red(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.DARK_RED}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def dark_gray(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.DARK_GRAY}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def dark_green(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.DARK_GREEN}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+    def dark_yellow(text:str, new_line=True):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.DARK_YELLOW}{text}{ANSI.RESET}", end='\n' if new_line else "")
+        else:
+            print(text, end='\n' if new_line else "")
+
+class Write:
+    """
+    The no-new-line-at-end version of Print
+    """
+    def lite_red(text:str):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.LITE_RED}{text}{ANSI.RESET}", end="")
+        else:
+            print(text, end="")
+
+    def lite_green(text:str):
+        """
+        ANSI codes are stripped if `sys.stdout` is not a `terminal`.
+        """
+        if sys.stdout.isatty():
+            print(f"{ANSI.LITE_GREEN}{text}{ANSI.RESET}", end="")
+        else:
+            print(text, end="")

@@ -1,1 +1,6 @@
-Spotify_Data
+.env
+.venv
+__pycache__
+
+Spotify User Data/*
+!Spotify User Data/directory.note
