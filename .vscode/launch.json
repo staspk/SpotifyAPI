@@ -4,7 +4,7 @@
         {
             "name": "Python: Debug main.py",
             "type": "debugpy",
-            "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+            // "python": "${workspaceFolder}/.venv/Scripts/python.exe",
             "request": "launch",
             "program": "${workspaceFolder}/main.py",
             "justMyCode": true

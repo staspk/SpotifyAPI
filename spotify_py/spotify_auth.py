@@ -1,3 +1,14 @@
+"""
+    To interact with the Spotify Web Api, you need to login into Spotify and get an
+            access_token, i.e: Bearer Token
+
+    The hope was that you did not need to delve into the specifics here...
+        call: SpotifyAuth.Validate_Access_Token()
+
+    Prerequisistes, look at: `Enable Spotify Web Api Interactions` section at:
+        https://github.com/staspk/SpotifyAPI
+    
+"""
 import base64, urllib, requests, socketserver, http.server, threading
 from datetime import datetime, timedelta
 from kozubenko.print import ANSI, Print, Write
@@ -11,9 +22,10 @@ from definitions import REDIRECT_URI, PERMISSION_SCOPES
 
 class SpotifyAuth(threading.Thread):
     """
-    Using the `Spotify Web API` (creating playlists, etc.) requires an `access_token`  
+    Using the `Spotify Web API` (creating playlists, etc.) requires an
+        `access_token`, i.e: Bearer Token
 
-        for further details, see: `SpotifyOAuth.Validate_Access_Token()`
+    The only "public" method: `SpotifyAuth.Validate_Access_Token()`
     """
     redirect_uri = REDIRECT_URI
     scopes_needed = PERMISSION_SCOPES
@@ -25,13 +37,16 @@ class SpotifyAuth(threading.Thread):
 
     def Validate_Access_Token(reject=False):
         """
+        The `access_token` will be saved to the .env file. `spotify_requests.py` later pulls from there. 
+
         On first call, procures an `access_token` via `authorization_code_flow()`
-            - must login into Spotify/grant permissions (through a console generated link)
-            - Required: `client_id`, `client_secret` key/value pairs in `.env`
+            - must login into Spotify/grant permissions through a console generated link
+            - Required: `client_id`, `client_secret` key/value pairs in `.env`. Get them at: https://developer.spotify.com/dashboard
 
-        OR refreshes an existing token via a POST call (tokens have a 1hr lifespan)  
+        OR refreshes an existing token via a POST call (tokens have a 1hr lifespan)
 
-        `reject` - set True, if brand new `access_token` is desired, no matter what
+        **PARAMETERS:**
+            `reject` - set True, if brand new `access_token` is desired, no matter what
         """
         if not Env.loaded: Env.Load()
         access_token = Env.Vars.get('access_token', None)

@@ -1,18 +1,20 @@
 from dataclasses import dataclass
 from kozubenko.print import Print
 from kozubenko.json import Json
-from .IStreamed import *
+from .models.IStreamed import *
 
 
 @dataclass
-class AudioStreamingHistory():
+class AudioStreamingHistory:
     """
     Analyzes lifetime listening record to find `songs`/`podcasts`/`audiobooks`, sorted by `total_ms_played`. Implementation details: `IStreamed.py`.
-
-    **Requires:** at least one `/Spotify User Data/{name}/Spotify Extended Streaming History/Streaming_History_Audio_***.json`
+    
+    **Requires:**
+        - `ExtendedStreamingHistory` directory has at least one file: `/Streaming_History_Audio_***.json`
+            - e.g: `/Spotify User Data/{name}/Spotify Extended Streaming History/Streaming_History_Audio_2021_3.json`
     """
-    songs:   list[StreamedSong]
-    podcasts: list[Podcast]
+    songs:    list[StreamedSong]
+    podcasts:  list[Podcast]
     audiobooks: list[AudioBook]
 
     total_records: int
@@ -27,14 +29,15 @@ class AudioStreamingHistory():
         Print.green(f'   AudioBooks : {self.audiobooks.__len__()}')
 
 
-class ExtendedStreamingHistory():
+class ExtendedStreamingHistory:
     """
     **Requires:** `/Spotify User Data/{name}/Spotify Extended Streaming History`   
     
     ***See: `SpotifyUser.py` for import steps.***
     """
 
-    def Parse(name:str, json_files:list[str]) -> AudioStreamingHistory:
+    @staticmethod
+    def Audio(name:str, json_files:list[str]) -> AudioStreamingHistory:
         """
         Pass in List of jsons with *`"Streaming_History_Audio"`* in their filename.  
         
@@ -48,9 +51,9 @@ class ExtendedStreamingHistory():
         unexpected: list[Unidentified] = []
 
         for json in json_files:
-            for record in Json.load(json):
+            for record in Json.Load(json):
                 iterations += 1
-                audio = IStreamed.createFromJsonRecord(record)
+                audio = IStreamed.From(record)
                 representation = repr(audio)
 
                 if isinstance(audio, StreamedSong):
@@ -77,7 +80,7 @@ class ExtendedStreamingHistory():
                     unexpected.append(audio)
 
         return AudioStreamingHistory(
-            sorted(songs_streamed.values()), sorted(podcasts_streamed.values()), sorted(audiobooks_streamed.values()),
+            sorted(songs_streamed.values(), reverse=True), sorted(podcasts_streamed.values(), reverse=True), sorted(audiobooks_streamed.values(), reverse=True),
             iterations,
             unexpected,
             name

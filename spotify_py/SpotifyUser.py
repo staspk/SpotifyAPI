@@ -1,65 +1,141 @@
+"""
+`SpotifyUser` deals with three types of user data:
+    1. Spotify Account Data
+    2. Spotify Extended Streaming History
+    3. Spotify Technical Log Information
+
+Request Data from Spotify: https://www.spotify.com/us/account/privacy/
+    Data Details: https://support.spotify.com/us/article/understanding-your-data/
+"""
+import os
 from datetime import datetime
-from kozubenko.os import Directory
+from typing import Optional
+from Spotify_Data_Types import Spotify_Data_Type
+from kozubenko.os import Directory, File
 from kozubenko.json import Json
+from kozubenko.print import Print
+from kozubenko.string import Str
+from .spotify_requests import SimpleRequests
+from .extended_streaming_history import AudioStreamingHistory, ExtendedStreamingHistory
 from .account_data import AccountData, DuplicateSong
-from .ISong import ISong
-from .IStreamed import StreamedSong
-from spotify_py.extended_streaming_history import AudioStreamingHistory, ExtendedStreamingHistory
+from .models.ISong import ISong
+from .models.IStreamed import StreamedSong
 from definitions import SPOTIFY_USER_DATA_DIR
 
 
+def USER_DATA_DIR(name:str, data_type:Optional[Spotify_Data_Type]=None) -> Directory:
+    """
+    - `data_type` - if passed not a `Spotify_Data_Type`, will throw!
+    """
+    if data_type and data_type not in Spotify_Data_Type:
+        raise Exception('USER_DATA_DIR(): data_type is not a Spotify_Data_Type!')
+
+    return Directory(SPOTIFY_USER_DATA_DIR, name, data_type)
+
+def ACCOUNT_DATA(name:str):               return USER_DATA_DIR(name, Spotify_Data_Type.ACCOUNT_DATA)
+def EXTENDED_STREAMING_HISTORY(name:str): return USER_DATA_DIR(name, Spotify_Data_Type.EXTENDED_STREAMING_HISTORY)
+
+type occurrences = int
 
 class SpotifyUser:
     """
-    Use `py ./import_spotify_data.py {name}` to import `my_spotify_data.zip`. Data types Spotify offers:
+    Use `py ./import_Spotify_Data.py {name}` to import `my_spotify_data.zip`. Data types Spotify offers:
     1. Spotify Account Data
     2. Spotify Extended Streaming History
     3. Spotify Technical Log Information
 
     ***Instantiate `SpotifyUser` with same `name` to manipulate/transform above data [1-2] to find statistical insights.***
     """
+    @property
+    def liked_songs(self) -> list[ISong]: return self._songs_liked
+
     def __init__(self, name:str):
         self.name = name
 
         self._account_creation_time:datetime = None
-        if(data := Json.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Account Data', 'Userdata.json')):
+        if(data := Json.Exists(ACCOUNT_DATA(name), 'Userdata.json')):
             self._account_creation_time = datetime.strptime(data['creationTime'], "%Y-%m-%d")
 
-        self._songs_liked:list[ISong]; self._songs_duplicates:list[DuplicateSong]
-        if(data := Json.exists(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Account Data', 'YourLibrary.json')):
-            (self._songs_liked,
-             self._songs_duplicates) = AccountData.Parse(self.name, data)
+        self._songs_liked:set[ISong]; self._song_duplicates:list[DuplicateSong]
+        if(data := Json.Exists(ACCOUNT_DATA(name), 'YourLibrary.json')):
+            self._songs_liked, self._song_duplicates = AccountData.YourLibrary(data)
 
-        self._history:AudioStreamingHistory = ExtendedStreamingHistory.Parse(
-            self.name,
-            Directory.files(
-                Directory(SPOTIFY_USER_DATA_DIR, self.name, 'Spotify Extended Streaming History'),
-                'Streaming_History_Audio'
-            )
+        self._history:AudioStreamingHistory = ExtendedStreamingHistory.Audio(
+            name,
+            EXTENDED_STREAMING_HISTORY(name).files(filter='Streaming_History_Audio')
         )
 
-    @staticmethod
-    def I_want_her_favorite_songs(me:SpotifyUser, her:SpotifyUser, minimum_listen_time_in_hours = 3) -> list[StreamedSong]:
-        """  technically: her `lifetime_listening_record`, filtered by `minimum_listen_time_in_hours`, subtracted by my `songs_liked`  
-          
-        **Requirements:**
-            - `Spotify Account Data` for `me`
-            - `Spotify Extended Streaming History` for `her` 
-        """
-        return [song for song in her.song_streaming_history(minimum_listen_time_in_hours*60) if song not in me._songs_liked]
-
+    def song_streaming_history(self, minimum_listen_time_in_minutes = 30) -> list[StreamedSong]:
+        """ Required: `Spotify Extended Streaming History`  """
+        return [song for song in self._history.songs if (song.total_ms_played > minimum_listen_time_in_minutes*60*1000)]
+    
     def favorite_songs(self, minimum_listen_time_in_hours = 3) -> list[StreamedSong]:
-        """  technically: `lifetime_listening_record`, filtered by `minimum_listen_time_in_hours`
-        Required: `Spotify Extended Streaming History`  """
+        """ Required: `Spotify Extended Streaming History`  """
         return [song for song in self.song_streaming_history(minimum_listen_time_in_hours*60)]
 
     def lost_song_candidates(self, minimum_listen_time_in_minutes = 20) -> list[StreamedSong]:
-        """  technically: a minimum_listen_time_in_minutes-filtered `lifetime_listening_record` - `LikedSongs`  
-        Required: `Spotify Extended Streaming History` + `Spotify Account Data`
+        """
+        technically: `self.song_streaming_history(minimum_listen_time_in_minutes=20)` NOT IN `self.liked_songs`
+
+        **Required:**
+            - `Spotify Extended Streaming History`
+            - `Spotify Account Data`
         """
         return [song for song in self.song_streaming_history(minimum_listen_time_in_minutes) if song not in self._songs_liked]
+
     
-    def song_streaming_history(self, minimum_listen_time_in_minutes = 30) -> list[StreamedSong]:
-        """  technically: `lifetime_listening_record`, filtered by `minimum_listen_time_in_minutes`  
-        Required: `Spotify Extended Streaming History`  """
-        return [song for song in self._history.songs if (song.total_ms_played > minimum_listen_time_in_minutes*60*1000)]
+    @staticmethod
+    def Save_Liked_Songs(name:str) -> dict[ISong, occurrences]:
+        """
+        Uses Spotify WebApi instead. Saves as binary file in: `USER_DATA_DIR(name)`.
+
+        Eventually, one could swap out:  
+            - `SpotifyUser().liked_songs` WITH:
+            - `SpotifyUser.Liked_Songs()
+        when requirements for one or the other can't be met.
+
+        **PARAMETERS:**
+            - `name` - Same `name` you use to init: `SpotifyUser(name)`
+        """
+        liked_songs = SimpleRequests.Liked_Songs()
+
+        file = File(USER_DATA_DIR(name), 'liked_songs').save_binary(liked_songs)
+        Print.green(f'SpotifyUser.Save_Liked_Songs(): saved {len(liked_songs)} songs: {file}')
+        
+        return liked_songs
+
+
+def I_want_her_favorite_songs(me:SpotifyUser, her:SpotifyUser, minimum_listen_time_in_hours = 3) -> list[StreamedSong]:
+    """
+    technically: `her.song_streaming_history`, subtracted by `me.songs_liked`, filtered by `minimum_listen_time_in_hours`.
+        
+    **Required:**
+        - `Spotify Account Data` FOR `me`
+        - `Spotify Extended Streaming History` FOR `her` 
+    """
+    return [song for song in her.song_streaming_history(minimum_listen_time_in_hours*60) if song not in me._songs_liked]
+
+def have_I_lost_a_song_from_Liked(name:str) -> list[ISong]:
+    """
+    - `name` - Same `name` you use to init: `SpotifyUser(name)`
+
+    Will check against your last backup. To do an actual backup, use: `SpotifyUser.Save_Liked_Songs()`
+    """
+    actual_Liked = SimpleRequests.Liked_Songs()
+    backup_Liked:dict[ISong, occurrences] = File(USER_DATA_DIR(name), 'liked_songs').load_binary()
+
+    missing:list[ISong] = []
+    for song in backup_Liked.keys():
+        if song not in actual_Liked.keys():
+            missing.append(song)
+
+    if len(missing) < 1:
+        Print.green(f'No, {name}: you have NOT lost any songs :)') 
+    else:
+        Print.red(f'Yes, {name}: you have lost {len(missing)} songs...\n')
+        for song in missing:
+            Print.lite_red(Str(str(song)).pad(1))
+        if len(missing) > 10:
+            Print.red(f'\nYes, {name}: you have lost {len(missing)} songs...')
+
+    return missing

@@ -1,6 +1,12 @@
-NOTE ON THIS DIRECTORY [Spotify User Data] => {
-	running: `py ./import_spotify_data.py {name}`
-	will create a folder: ./{name}
-	under which the various data types Spotify offers will be organized.
-	See SpotifyUser.py for further details
-}
+This directory is SPOTIFY_USER_DATA_DIR [definitions.py]
+
+Is container for Spotify_Data_Types [Spotify_Data_Types.py] 
+	Imported via: `py ./import_Spotify_Data.py {name}`
+
+Ingested during SpotifyUser() [spotify_py/SpotifyUser.py] instantiation to 
+	Find statistical insights, compare different data owners
+
+
+Entire Spotify Lifetime Listening Record
+	- can ONLY be acquired through this offline data, specifically:
+	- Spotify Extended Streaming History, see: Spotify_Data_Types.py

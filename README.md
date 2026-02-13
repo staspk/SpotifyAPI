@@ -6,7 +6,7 @@
 ### Example Use
 Ever lose a beloved song? Create a Spotify playlist of lost song candidates (lifetime_listening_record - liked_songs):
 ```
-NAME = "Stan"	# same name from import step: `py ./import_spotify_data.py {name}`
+NAME = "Stan"	# same name from import step: `py ./import_Spotify_Data.py {name}`
 lost_song_candidates = SpotifyUser(NAME).lost_song_candidates(minimum_listen_time_in_minutes=60)
 
 SaveToPlaylistRequest.New_Playlist(
@@ -23,7 +23,7 @@ SaveToPlaylistRequest.New_Playlist(
 	- Technical Log
 - Spotify Data, where:
   	- https://www.spotify.com/us/account/privacy/ - USA Accounts Direct Link
-- `py ./import_spotify_data.py {name}`
+- `py ./import_Spotify_Data.py {name}`
     - `name`: owner of the Spotify Data. separate `*.zips` will be categorized under this name
     - find `my_spotify_data.zip` through the File Chooser
  - **Enable Spotify Web Api Interactions**

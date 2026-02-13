@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Self
-from kozubenko.string import labeledStr
 
 
-class Success(labeledStr): pass
-class Partial(labeledStr): pass
-class Failure(labeledStr): pass
+class Success(str): pass
+class Partial(str): pass
+class Failure(str): pass
 
 class IHandleRequest(ABC):
     def __init__(self):

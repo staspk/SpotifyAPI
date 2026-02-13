@@ -1,18 +1,23 @@
 
 
-
-class labeledStr(str):
-    def __new__(cls, value):
-        if(not isinstance(value, str)): raise TypeError('labeledStr value must be a str')
-        return super(labeledStr, cls).__new__(cls, value)
+def whitespace(amount:int) -> str:
+    return " " * amount
 
 
-class String():
-    def list(_list:list, flip=False) -> str:
-        """ Transforms a list into a pretty string """
-        _str = ""
-        if(flip):
-            _list = reversed(_list)
-        for item in _list:
-            _str += f'{item}\n\n'
-        return _str[:-1]
+class Str(str):
+
+    def pad(self, amount:str, indent_size=2) -> str:
+        string = ""
+        for line in self.splitlines(keepends=True):
+            string += whitespace(amount * indent_size) + line
+
+        return string
+
+    @staticmethod
+    def From(items:list, separator="\n\n") -> str:
+        """ Transforms list into a pretty string. """
+        string = ""
+        for item in items:
+            string += f'{item}{separator}'
+
+        return string[:-1]

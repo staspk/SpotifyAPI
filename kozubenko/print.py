@@ -1,8 +1,23 @@
+from os import PathLike
 import sys, enum
-from typing import Callable
-from .typing import FileDescriptorOrPath, WritableTextMode
+from typing import Callable, Literal, Union
 
 
+FileDescriptorOrPath = Union[int, str, bytes, PathLike[str], PathLike[bytes]]
+WritableTextMode = Literal[
+    'w',    # write
+    'a',    # append
+    'x',    # exclusive create
+    'w+',   # write/read
+    'a+',   # append/read
+    'x+',   # exclusive create/read
+    'wt',   # write (text mode)
+    'at',   # append (text mode)
+    'xt',   # exclusive create (text mode)
+    'wt+',  # write/read (text)
+    'at+',  # append/read (text)
+    'xt+'   # exclusive create/read (text)
+]
 def redirect_print_to_file(file:FileDescriptorOrPath, mode:WritableTextMode, print_function:Callable):
     """
     Example Use: `redirect_print_to_file(report, 'w', lambda: print_list(problem_chapters))`
@@ -15,7 +30,6 @@ def redirect_print_to_file(file:FileDescriptorOrPath, mode:WritableTextMode, pri
         finally:
             sys.stdout = old_stdout
 
-
 def print_dict(_dict:dict):
     """
     Recommended for more complex dicts (but uses repr instead):
@@ -26,7 +40,7 @@ def print_dict(_dict:dict):
         print(f'{key}: {value}\n')
 
 
-class ANSI(enum.Enum):
+class ANSI(enum.StrEnum):
     GREEN       = "\033[92m"
     YELLOW      = "\033[93m"
     RED         = "\033[91m"
@@ -45,6 +59,9 @@ class ANSI(enum.Enum):
     LITE_RED   = "\033[38;2;232;107;118m"
     LITE_GREEN = "\033[38;2;96;223;107m"
 
+def colored_input(string:str, color:ANSI=ANSI.YELLOW):
+    input(f'{color}{string}{ANSI.RESET}')
+
 
 class Print:
     def list(list:list, color:ANSI=None, flip=False):
@@ -56,7 +73,7 @@ class Print:
 
         for item in list:
             if(sys.stdout.isatty()):
-                print(f'{color.value}{item}{ANSI.RESET.value}\n') if color else print(f'{item}\n')
+                print(f'{color}{item}{ANSI.RESET}\n') if color else print(f'{item}\n')
             else:
                 print(f'{item}\n')
 
@@ -65,7 +82,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.GREEN.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.GREEN}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
             
@@ -74,7 +91,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.YELLOW.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.YELLOW}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -83,7 +100,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.RED.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.RED}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -92,7 +109,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.ROSE_GOLD.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.ROSE_GOLD}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -101,7 +118,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.LITE_RED.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.LITE_RED}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -110,7 +127,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.LITE_GREEN.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.LITE_GREEN}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -119,7 +136,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.CYAN.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.CYAN}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -128,7 +145,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.WHITE.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.WHITE}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -137,7 +154,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.GRAY.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.GRAY}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -146,7 +163,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.BLUE.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.BLUE}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -155,7 +172,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.DARK_RED.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.DARK_RED}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -164,7 +181,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.DARK_GRAY.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.DARK_GRAY}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -173,7 +190,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.DARK_GREEN.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.DARK_GREEN}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -182,7 +199,7 @@ class Print:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.DARK_YELLOW.value}{text}{ANSI.RESET.value}", end='\n' if new_line else "")
+            print(f"{ANSI.DARK_YELLOW}{text}{ANSI.RESET}", end='\n' if new_line else "")
         else:
             print(text, end='\n' if new_line else "")
 
@@ -195,7 +212,7 @@ class Write:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.LITE_RED.value}{text}{ANSI.RESET.value}", end="")
+            print(f"{ANSI.LITE_RED}{text}{ANSI.RESET}", end="")
         else:
             print(text, end="")
 
@@ -204,6 +221,6 @@ class Write:
         ANSI codes are stripped if `sys.stdout` is not a `terminal`.
         """
         if sys.stdout.isatty():
-            print(f"{ANSI.LITE_GREEN.value}{text}{ANSI.RESET.value}", end="")
+            print(f"{ANSI.LITE_GREEN}{text}{ANSI.RESET}", end="")
         else:
             print(text, end="")

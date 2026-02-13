@@ -1,47 +1,55 @@
 """
-response.status_code: 401
-error message: The access token expired
+https://developer.spotify.com/documentation/web-api
 """
-import time, requests
-from typing import Self
+import time, requests, pickle
+from typing import Optional, Self
+from definitions import PROJECT_ROOT_DIRECTORY, TEMP_DIR
 from kozubenko.env import Env
 from kozubenko.log import Log
 from kozubenko.print import Print
-from kozubenko.string import labeledStr
 from kozubenko.utils import assert_list
 from spotify_py import IHandleRequest
+from spotify_py.models.Track import Track
 from spotify_py.spotify_auth import SpotifyAuth
-from .ISong import ISong
+from .models.ISong import ISong
 from .IHandleRequest import *
 
 
-
-class UserID(labeledStr):
-    _user_id:UserID=None
+class UserID(str):
+    ENV_KEY = "user_id"
+    _user_id:UserID = None
 
     @staticmethod
     def Get() -> UserID:
-        if(UserID._user_id is None):
+        if UserID._user_id is None:
             if not Env.loaded: Env.Load()
-            user_id = Env.Vars.get('user_id', None)
-            if(user_id is None): user_id = SimpleRequests.get_UserID()
-        return user_id
 
-class PlaylistID(labeledStr): pass
-class PlaylistName(labeledStr): pass
+            user_id = Env.Vars.get(UserID.ENV_KEY, None)
+            if user_id is None:
+                user_id = SimpleRequests.get_UserID()   # throws, on failure to get user_id 
+
+            UserID._user_id = UserID(user_id)
+
+        return UserID._user_id
+
+class PlaylistID(str): pass
+class PlaylistName(str): pass
+
 
 class SimpleRequests:
     def get_UserID() -> UserID|None:
         """ https://developer.spotify.com/documentation/web-api/reference/get-current-users-profile
         """
+        ENDPOINT = 'https://api.spotify.com/v1/me'
+
         SpotifyAuth.Validate_Access_Token()
-        response = requests.get(url='https://api.spotify.com/v1/me', headers={
+        response = requests.get(url=ENDPOINT, headers={
             'Authorization': f'Bearer {Env.Vars['access_token']}'
         })
 
         if response.status_code == 200:
             user_id = UserID(response.json().get('id'))
-            Env.Vars['user_id'] = user_id
+            UserID._user_id = user_id
             return user_id
         else:
             Log.Error(SimpleRequests, (
@@ -68,8 +76,9 @@ class SimpleRequests:
         return None
 
     def get_user_playlists() -> list|None:
-        """ https://developer.spotify.com/documentation/web-api/reference/get-a-list-of-current-users-playlists
-        TODO: only capable of getting the first 50 playlists, rn
+        """
+        TODO: only capable of getting the first 50 playlists, atm  
+        https://developer.spotify.com/documentation/web-api/reference/get-a-list-of-current-users-playlists
         """
         SpotifyAuth.Validate_Access_Token()
         response = requests.get('https://api.spotify.com/v1/me/playlists?limit=50', headers={
@@ -78,10 +87,12 @@ class SimpleRequests:
 
         if response.status_code == 200:
             return response.json()['items']
-        Log.Error(SimpleRequests, f'get_user_playlists()\nresponse.status_code: {response.status_code}\nerror message: {response.json().get('error').get('message')}')
+        else:
+            Log.Error(SimpleRequests, f'get_user_playlists()\nresponse.status_code: {response.status_code}\nerror message: {response.json().get('error').get('message')}')
 
     def create_playlist(playlist_name, description="", public=True) -> PlaylistID|str:
-        """ https://developer.spotify.com/documentation/web-api/reference/create-playlist
+        """
+        https://developer.spotify.com/documentation/web-api/reference/create-playlist
         """
         SpotifyAuth.Validate_Access_Token()
         response = requests.post(f'https://api.spotify.com/v1/users/{UserID.Get()}/playlists',
@@ -97,20 +108,89 @@ class SimpleRequests:
         )
         if response.status_code == 201:
             return PlaylistID(response.json().get('id'))
-        error = f'response.status_code: {response.status_code}\n{response.json().get('error').get('message')}'
-        Log.Error(SimpleRequests, error)
-        return error
+        else:
+            error = f'response.status_code: {response.status_code}\n{response.json().get('error').get('message')}'
+            Log.Error(SimpleRequests, error)
+            return error
+
+
+    type next_url = str
+
+    def get_users_saved_tracks(limit=50, offset=0, url:Optional[str]=None) -> tuple[list[Track], next_url|None]:
+        """
+        https://developer.spotify.com/documentation/web-api/reference/get-users-saved-tracks
+        
+        **Returns:**  Tuple:  
+            - `list[Track]`
+            - `next_url` | `None` - A response has a next field for the next offset, if more tracks exist
+
+        **Example:**
+        ```python
+        Tracks, next = SimpleRequests.get_users_saved_tracks(url="https://api.spotify.com/v1/me/tracks?offset=0&limit=50")
+        while next:
+            tracks, next = SimpleRequests.get_users_saved_tracks(url=next)
+            Tracks += tracks
+        ```
+        """
+        URL = f'https://api.spotify.com/v1/me/tracks?limit={limit}&offset={offset}'
+        if url:
+            URL = url
+
+        SpotifyAuth.Validate_Access_Token()
+
+        response = requests.get(url=URL, headers={
+            'Authorization': f'Bearer {Env.Vars['access_token']}'
+        }).json()
+
+        tracks:list[Track] = []
+        for item in response.get('items'):
+            tracks.append(Track(
+                title  = item['track']['name'],
+                artist = item['track']['artists'][0]['name'],
+                album  = item['track']['album']['name'],
+                id       = item['track']['id'],
+                added_at = item['added_at']
+            ))
+
+        return (tracks, response.get('next', None))
+
+    type occurrences = int
+    @staticmethod
+    def Liked_Songs() -> dict[ISong, occurrences]:
+        """
+        **Requires:**  in `.env` file:
+            - client_secret
+            - client_id
+        """
+        SpotifyAuth.Validate_Access_Token()
+
+        liked_tracks, next = SimpleRequests.get_users_saved_tracks(url="https://api.spotify.com/v1/me/tracks?offset=0&limit=50")
+        while next:
+            tracks, next = SimpleRequests.get_users_saved_tracks(url=next)
+            liked_tracks += tracks
+
+        type occurrences = int
+        liked_songs:dict[ISong, occurrences] = {}
+        for track in liked_tracks:
+            song = ISong(track.title, track.album, track.artist)
+
+            if song in liked_songs: liked_songs[song] = (liked_songs[song] + 1)
+            else:                   liked_songs[song] = 1
+
+        return liked_songs
+
 
 class SaveToPlaylistRequest(IHandleRequest):
     """
     See: https://developer.spotify.com/documentation/web-api/reference/add-tracks-to-playlist
 
-    Example:
+    **Example:**
     ```python
     SaveToPlaylistRequest.New_Playlist(
         playlist_name='Her Favorite Songs',
         description='upper segment of her lifetime_listening_record - songs_I_already_liked'
     ).Handle(her_favorite_songs).Result()
+    ```
     """
 
     def __init__(self, playlistID:PlaylistID=None, playlist_name:str=None):

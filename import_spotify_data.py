@@ -1,25 +1,22 @@
 """
-`py ./import_spotify_data.py {name}`
+`py ./import_Spotify_Data.py {name}`
     `{name}:str` -> owner of the Spotify Data. Separate `*.zips` will be categorized under this name. See: `SpotifyUser`
 
 Spotify Data Types:
     - Spotify Account Data
     - Spotify Extended Streaming History
     - Spotify Technical Log Information
-
 """
-import os, argparse, shutil
-from datetime import datetime
-from pathlib import Path
+import os, argparse
+from typing import Optional
 from tkinter import Tk, filedialog
-
-from kozubenko.os import Downloads_Directory
-from definitions import SPOTIFY_USER_DATA_DIR, SPOTIFY_USER_DATA_ARCHIVE_DIR
-from definitions import SPOTIFY_ACCOUNT_DATA, SPOTIFY_EXTENDED_STREAMING_HISTORY, SPOTIFY_TECHNICAL_LOG
-
-from zipfile import ZipFile, ZIP_DEFLATED
-
+from zipfile import ZIP_LZMA, ZipFile
+from kozubenko.datetime import local_time_as_legal_filename
 from kozubenko.print import Print
+from kozubenko.os import Directory, Downloads_Directory, File
+from spotify_py.SpotifyUser import USER_DATA_DIR
+from Spotify_Data_Types import Spotify_Data_Type
+
 
 
 if __name__ == "__main__":
@@ -28,68 +25,107 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.name:
-        Print.red('import_spotify_data.py: name {arg1} is required. For details, run: `py import_spotify_data.py --help`')
+        Print.red('import_Spotify_Data.py: name {arg1} is required. For details, run: `py import_Spotify_Data.py --help`')
         exit(0)
 
 
-# dir_to_archive => full path of directory to archive; DATA_CATEGORY => See 'my_spotify_data.zip' Folder Names in definitions.py
-def archive(dir_to_archive:str, DATA_CATEGORY):
-    created_at = datetime.fromtimestamp(os.path.getctime(dir_to_archive)).strftime('%Y-%m-%d')
-    name = dir_to_archive.split('\\')[-2]
-    output_target_dir = os.path.join(SPOTIFY_USER_DATA_ARCHIVE_DIR, name)
-    Path(output_target_dir).mkdir(parents=True, exist_ok=True)
+class Test:
+    def archive_has_correctly_zipped_all_old_files(data_directory:Directory, archive_dest:Directory) -> bool:
+        original_file_names:set[str] = set()
 
-    data_category = dir_to_archive.split('\\')[-1]
-    # print(f'Data Category: {data_category}')
-    output_folder_name = f'{data_category} - {created_at}.zip'                  # example: 'Spotify Extended Streaming History - 2025-01-01'
-    output_target_dir = os.path.join(output_target_dir, output_folder_name)
-    
-    with ZipFile(output_target_dir, 'w', ZIP_DEFLATED) as zip_ref:
-        for cur_dir, folder_names, file_names in os.walk(dir_to_archive):
-            for file_name in file_names:
-                file = os.path.join(cur_dir, file_name)
-                arc_name = os.path.relpath(file, os.path.join(dir_to_archive, '..'))
-                zip_ref.write(file, arc_name)
-    
-    shutil.rmtree(dir_to_archive, ignore_errors=False)      # Deleting folder    
-    print(f'Archive(): dir_to_archive: {dir_to_archive}')
+        for file in data_directory.files():
+            original_file_names.add(file.name)
 
+        for file in ZipFile(archive_dest, 'r').namelist():
+            if not File(file).name in original_file_names:
+                return False
 
-def handle_unzip(zipfile_ref:ZipFile, target_folder_in_zip:str, dest_dir:str):
-    if os.path.exists(dest_dir):
-        archive(dest_dir, target_folder_in_zip)
-    
-    for file_name in zipfile_ref.namelist():
-        if file_name.startswith(target_folder_in_zip + '/') and file_name.endswith('.json'):   # Only .jsons to avoid importing extraneous files, e.g. readme.pdf
-            zipfile_ref.extract(file_name, os.path.join(dest_dir, '..'))
-    print(f'handle_unzip(): target_folder_in_zip: {target_folder_in_zip}, dest_dir: {dest_dir}')
+        return True
 
-def save_user_data_to_project_files(name:str, path_to_zip: str):
+def archive(name:str, data_type:Spotify_Data_Type) -> Directory:
     """
-    name: data owner/username. Becomes name of the folder under which data is stored.\n
-    path_to_zip: path to 'my_spotify_data.zip'
+    Caller should check if `archive()` necessary. Will throw if request
+
+    **Returns:**
+        - If zipped folder absolute path 
     """
-    given_zip = ZipFile(path_to_zip, 'r')
-    for file_name in given_zip.namelist():
-        if file_name == SPOTIFY_ACCOUNT_DATA + '/':
-            handle_unzip(given_zip, SPOTIFY_ACCOUNT_DATA, os.path.join(SPOTIFY_USER_DATA_DIR, name, SPOTIFY_ACCOUNT_DATA))
+    data_to_archive = USER_DATA_DIR(name, data_type)
+    DESTINATION = Directory(USER_DATA_DIR(name), 'ARCHIVE', data_type, f'{local_time_as_legal_filename()}.zip')
 
-        if file_name == SPOTIFY_EXTENDED_STREAMING_HISTORY + '/':
-            handle_unzip(given_zip, SPOTIFY_EXTENDED_STREAMING_HISTORY, os.path.join(SPOTIFY_USER_DATA_DIR, name, SPOTIFY_EXTENDED_STREAMING_HISTORY))
-            
-        if file_name == SPOTIFY_TECHNICAL_LOG + '/':
-            handle_unzip(given_zip, SPOTIFY_TECHNICAL_LOG, os.path.join(SPOTIFY_USER_DATA_DIR, name, SPOTIFY_TECHNICAL_LOG))
+    if not data_to_archive.empty():
+        with ZipFile(DESTINATION.ensure_parents(), 'w', compression=ZIP_LZMA) as zip:
+            for file in data_to_archive.files():
+                zip.write(file, os.path.relpath(file, file.parent.parent))
 
-    given_zip.close()
+        return DESTINATION
+    
+    return Exception(f'archive(name={name}, data_type={data_type}): archive() called on an empty Directory')
 
-def Import_Spotify_Data(name:str):
-    root = Tk()
-    root.attributes('-topmost',True, '-alpha',0)
+def identify_Spotify_Data_Type(zip:ZipFile) -> Spotify_Data_Type | Exception:
+    """
+    Identified by the root folder in 'my_spotify_data.zip'
+        name of root folder == `Spotify_Data_Type`
 
-    path_to_zip = filedialog.askopenfilename(initialdir=Downloads_Directory(), title='Select my_spotify_data*.zip', filetypes=[('zip files', '*.zip')])
+    Remarks:
+    --------
+    **`zip.namelist()` Returns:**
+        Spotify Extended Streaming History/Streaming_History_Audio_2016-2018_0.json
+        ...
+        Spotify Extended Streaming History/Streaming_History_Video_2018-2026.json
+        Spotify Extended Streaming History/
+        Spotify Extended Streaming History/ReadMeFirst_ExtendedStreamingHistory.pdf
 
-    save_user_data_to_project_files(name, path_to_zip)
+    `containing_folder` -> "Spotify Extended Streaming History"
+    """
+    root_folder_name = zip.namelist()[0].split('/', maxsplit=1)[0]
+
+    if root_folder_name in Spotify_Data_Type:
+        return Spotify_Data_Type(root_folder_name)
+    
+    raise Exception('identify_Spotify_Data_Type(): Given .zip does not contain a standard Spotify_Data_Type!')
+
+def Import_Spotify_Data(name:str, path_to_zip:Optional[str]=None) -> None | Exception:
+    """
+    Unzips only jsons from 'my_spotify_data.zip' to avoid extraneous files, e.g. readme.pdf
+
+    **Parameters**:
+        - `name` - data owner/username. Becomes name of the folder under which data is stored.
+        - `path_to_zip` - path to 'my_spotify_data.zip'. If not provided, filedialog opens for user to manually select .zip.
+    """
+    if path_to_zip is None:
+        root = Tk()
+        root.attributes('-topmost',True, '-alpha',0)
+        path_to_zip = filedialog.askopenfilename(initialdir=Downloads_Directory(), title='Select my_spotify_data*.zip', filetypes=[('zip files', '*.zip')])
+
+    zip = ZipFile(path_to_zip, 'r')
+    data_type = identify_Spotify_Data_Type(zip)
+    data_dest = Directory(USER_DATA_DIR(name), data_type)   # i.e: ./Spotify User Data/{name}/{Spotify_Data_Type}
+
+    if data_dest.exists() and not data_dest.empty():
+        archive_dest:Directory = archive(name, data_type)
+        if not Test.archive_has_correctly_zipped_all_old_files(data_dest, archive_dest):
+            raise Exception('Import_Spotify_Data(): Cannot Proceed, TEST FAILED!')
+        archive_dest.delete()
+    else:
+        archive_dest = None
+
+    for file in zip.namelist():   # e.g: "Spotify Extended Streaming History/Streaming_History_Audio_2016-2018_0.json"
+        if file.endswith('.json'):
+            zip.extract(file, data_dest.parent)   # root_folder in my_spotify_data.zip IS destination, thus destination.parent passed in as alternate `path` 
+
+    zip.close()
+
+    Print.green(f'Import_Spotify_Data(name={name}, path_to_zip={path_to_zip}): SUCCESS!')
+    Print.green(f'   data_type = {data_type}')
+    Print.green(f'   data_dest = {data_dest}')
+    if archive_dest:
+        Print.green(f'   old data archived to = {archive_dest}')
+
 
 
 if __name__ == "__main__":
     Import_Spotify_Data(args.name)
+
+
+
+
