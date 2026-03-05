@@ -95,7 +95,7 @@ class SpotifyUser:
         return liked_songs
 
 
-def I_want_her_favorite_songs(Her:SpotifyUser, Me:SpotifyUser, minimum_listen_time_in_hours = 3) -> list[StreamedSong]:
+def Her_favorite_songs_minus_what_I_already_liked(Her:SpotifyUser, Me:SpotifyUser, minimum_listen_time_in_hours = 3) -> list[StreamedSong]:
     """
     **Returns**:
         `Her.song_streaming_history`, subtracted by `Me.songs_liked`, filtered by: `minimum_listen_time_in_hours`.
