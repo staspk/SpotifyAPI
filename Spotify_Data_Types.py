@@ -1,5 +1,17 @@
 from enum import StrEnum
+from typing import Optional
+from kozubenko.os import Directory
+from definitions import SPOTIFY_USER_DATA_DIR
 
+
+def USER_DATA_DIR(name:str, data_type:Optional[Spotify_Data_Type]=None) -> Directory:
+    """
+    - `data_type` - if passed not a `Spotify_Data_Type`, will throw!
+    """
+    if data_type and data_type not in Spotify_Data_Type:
+        raise Exception(f'USER_DATA_DIR(): type(data_type){type(data_type)}. Should be: Spotify_Data_Type!')
+
+    return Directory(SPOTIFY_USER_DATA_DIR, name, data_type)
 
 class Spotify_Data_Type(StrEnum):
     """

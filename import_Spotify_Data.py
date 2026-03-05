@@ -14,8 +14,7 @@ from zipfile import ZIP_LZMA, ZipFile
 from kozubenko.datetime import local_time_as_legal_filename
 from kozubenko.print import Print
 from kozubenko.os import Directory, Downloads_Directory, File
-from spotify_py.SpotifyUser import USER_DATA_DIR
-from Spotify_Data_Types import Spotify_Data_Type
+from Spotify_Data_Types import USER_DATA_DIR, Spotify_Data_Type
 
 
 

@@ -7,10 +7,8 @@
 Request Data from Spotify: https://www.spotify.com/us/account/privacy/
     Data Details: https://support.spotify.com/us/article/understanding-your-data/
 """
-import os
 from datetime import datetime
-from typing import Optional
-from Spotify_Data_Types import Spotify_Data_Type
+from Spotify_Data_Types import USER_DATA_DIR, Spotify_Data_Type
 from kozubenko.os import Directory, File
 from kozubenko.json import Json
 from kozubenko.print import Print
@@ -20,17 +18,7 @@ from .extended_streaming_history import AudioStreamingHistory, ExtendedStreaming
 from .account_data import AccountData, DuplicateSong
 from .models.ISong import ISong
 from .models.IStreamed import StreamedSong
-from definitions import SPOTIFY_USER_DATA_DIR
 
-
-def USER_DATA_DIR(name:str, data_type:Optional[Spotify_Data_Type]=None) -> Directory:
-    """
-    - `data_type` - if passed not a `Spotify_Data_Type`, will throw!
-    """
-    if data_type and data_type not in Spotify_Data_Type:
-        raise Exception('USER_DATA_DIR(): data_type is not a Spotify_Data_Type!')
-
-    return Directory(SPOTIFY_USER_DATA_DIR, name, data_type)
 
 def ACCOUNT_DATA(name:str):               return USER_DATA_DIR(name, Spotify_Data_Type.ACCOUNT_DATA)
 def EXTENDED_STREAMING_HISTORY(name:str): return USER_DATA_DIR(name, Spotify_Data_Type.EXTENDED_STREAMING_HISTORY)
